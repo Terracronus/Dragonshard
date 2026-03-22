@@ -1,6 +1,0 @@
-# Ignore the Firebase config
-config.js
-
-# Ignore other junk
-node_modules/
-.DS_Store
