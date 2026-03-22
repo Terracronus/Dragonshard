@@ -61,7 +61,8 @@
             const Box = new DiceBox({
                 container: "#dice-box",
                 // Must point to YOUR hosted copy so the worker can resolve its own files
-                assetPath: "https://terracronus.github.io/Dragonshard/assets/dice-box/",
+                // Root-relative path — avoids the double-domain concatenation bug
+                assetPath: "/Dragonshard/assets/dice-box/",
                 theme: "default",
                 scale: 6
             });
