@@ -89,15 +89,18 @@
                 scale: 28,               
                 throwForce: 12,          
                 spinForce: 12,           
-                startingHeight: 15       
+                startingHeight: 15,
+                width: window.innerWidth,
+                height: window.innerHeight
             });
 
             await Box.init();
-            
-            // --- THE FIX ---
-            // Force the physics engine to redraw its boundaries to match the true screen size
-            // destroying the default 300x150 constraint.
-            window.dispatchEvent(new Event('resize'));
+
+            // Defer resize until after the browser has painted the full layout,
+            // so the physics world boundaries match the true canvas dimensions.
+            requestAnimationFrame(() => {
+                window.dispatchEvent(new Event('resize'));
+            });
             
             statusEl.innerText = "Arena Ready";
             setReady(true);
