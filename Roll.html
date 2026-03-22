@@ -6,7 +6,6 @@
     <title>Shared Dice Arena</title>
     
     <style>
-        /* matching your "Dragonshard" theme */
         body { 
             margin: 0; background: #0a0002; color: white; font-family: 'serif'; 
             overflow: hidden; height: 100vh; width: 100vw;
@@ -17,7 +16,6 @@
             width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;
         }
 
-        /* Nav & UI */
         .back-nav {
             position: absolute; top: 20px; left: 20px; z-index: 100;
             color: #ff3366; text-decoration: none; text-transform: uppercase; 
@@ -75,23 +73,21 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import DiceBox from 'dice-box';
-        
-        // 1. Import config from your hidden file
         import { firebaseConfig } from './config.js';
 
-        // 2. Initialize Firebase
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const rollsRef = ref(db, "shared_rolls");
 
-        // 3. Set Player Identity (Simple prompt for now)
+        // Set Player Identity
         let playerName = localStorage.getItem('dragonshard_name');
         if (!playerName) {
             playerName = prompt("Identify yourself, Traveler:") || "Anonymous";
             localStorage.setItem('dragonshard_name', playerName);
         }
 
-        // 4. Initialize 3D Dice
+        // Initialize 3D Dice
         const Box = new DiceBox("#dice-box", {
             assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/assets/",
             theme: "rust", 
@@ -101,30 +97,29 @@
 
         await Box.init();
 
-        // 5. Shared Logic: Listen for rolls from the database
+        // Listen for rolls from the database
         onChildAdded(rollsRef, (snapshot) => {
             const data = snapshot.val();
             const now = Date.now();
             
-            // Only roll if the event is fresh (last 10 seconds)
+            // Sync roll if it's new (last 10 seconds)
             if (data.timestamp && (now - data.timestamp) < 10000) {
                 Box.roll(data.notation);
-                updateLog(`${data.user} manifested ${data.notation}`);
+                updateLog(`${data.user} rolled ${data.notation}`);
             }
         });
 
-        // 6. User Actions
+        // GLOBAL FUNCTIONS (Attached to window so buttons can see them)
         window.triggerRoll = (notation) => {
             push(rollsRef, {
                 user: playerName,
                 notation: notation,
                 timestamp: serverTimestamp()
-            });
+            }).catch(err => console.error("Firebase Error:", err));
         };
 
         window.clearDice = () => Box.clear();
 
-        // UI Feedback
         function updateLog(msg) {
             const log = document.getElementById('log');
             const entry = document.createElement('div');
@@ -133,7 +128,7 @@
         }
 
         // Clear dice on screen tap
-        Box.onCanvasClick = () => Box.clear();
+        Box.onCanvasClick = () => window.clearDice();
     </script>
 </body>
 </html>
