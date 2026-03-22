@@ -15,27 +15,51 @@
             width: 100vw; 
             background-image: radial-gradient(circle, #1a0005 0%, #000000 100%); 
         }
-        
-        /*
-         * The dice-box is a FIXED canonical size (360×640).
-         * JS applies a CSS scale() so it visually fills the screen on any device.
-         * DiceBox's physics engine only ever sees 360×640, so seeds are deterministic.
-         */
+
         #dice-box { 
             position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 360px;   /* canonical physics width  */
-            height: 640px;  /* canonical physics height */
-            z-index: 1;
-            transform-origin: top left; /* JS sets the scale + offset */
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw; height: 100vh; 
+            z-index: 1; 
         }
         #dice-box canvas {
             position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
+            top: 0 !important; left: 0 !important;
+            width: 100% !important; height: 100% !important;
+        }
+
+        /* Result overlay — shows the authoritative seeded result */
+        #result-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -60%);
+            z-index: 200;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        #result-overlay.visible { opacity: 1; }
+
+        #result-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #ff3366;
+            margin-bottom: 8px;
+        }
+        #result-number {
+            font-size: 96px;
+            line-height: 1;
+            color: #fff;
+            text-shadow: 0 0 40px #ff3366, 0 0 80px #ff3366;
+        }
+        #result-breakdown {
+            font-size: 14px;
+            color: #ffaaaa;
+            margin-top: 6px;
+            letter-spacing: 1px;
         }
 
         .controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 15px; }
@@ -53,6 +77,13 @@
     <div id="status">Loading Engine...</div>
     <div id="dice-box"></div>
 
+    <!-- Authoritative result shown on top of the animation -->
+    <div id="result-overlay">
+        <div id="result-label">—</div>
+        <div id="result-number">—</div>
+        <div id="result-breakdown"></div>
+    </div>
+
     <div class="controls">
         <div class="button-group">
             <button id="btn-d20" class="roll-btn">Roll D20</button>
@@ -64,38 +95,74 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
         import DiceBox from "https://terracronus.github.io/Dragonshard/assets/dice-box/dice-box.es.min.js";
 
-        // ─── Canonical physics world ───────────────────────────────────────────────
-        // ALL devices use this fixed size so the physics simulation is identical
-        // for any given seed, regardless of the real screen dimensions.
-        const PHYSICS_W = 360;
-        const PHYSICS_H = 640;
+        // ─── Seeded RNG (Mulberry32) ───────────────────────────────────────────────
+        // Converts the seed string into a deterministic integer hash.
+        function seedToInt(str) {
+            let h = 0;
+            for (let i = 0; i < str.length; i++) {
+                h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+            }
+            return h >>> 0;
+        }
 
-        // Scale the fixed-size container so it fills (covers) the actual screen.
-        // "cover" means we scale up to the larger ratio so no black bars appear.
-        const scaleX = window.innerWidth  / PHYSICS_W;
-        const scaleY = window.innerHeight / PHYSICS_H;
-        const coverScale = Math.max(scaleX, scaleY);
+        // Returns a fast, high-quality PRNG function from a numeric seed.
+        function mulberry32(seed) {
+            return function() {
+                seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+                let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+                t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+        }
 
-        const diceContainer = document.getElementById('dice-box');
-        // Centre the upscaled canvas over the viewport
-        const offsetX = (window.innerWidth  - PHYSICS_W * coverScale) / 2;
-        const offsetY = (window.innerHeight - PHYSICS_H * coverScale) / 2;
-        diceContainer.style.transform       = `scale(${coverScale})`;
-        diceContainer.style.transformOrigin = 'top left';
-        diceContainer.style.left            = offsetX + 'px';
-        diceContainer.style.top             = offsetY + 'px';
+        // Roll `count`d`sides` using the seed. Returns { total, rolls }.
+        // Identical on every device for the same seed string — guaranteed.
+        function seededRoll(notation, seedStr) {
+            const match = notation.match(/^(\d+)d(\d+)$/i);
+            if (!match) return null;
+            const count = parseInt(match[1]);
+            const sides = parseInt(match[2]);
+            const rng   = mulberry32(seedToInt(seedStr));
+            const rolls = Array.from({ length: count }, () => Math.floor(rng() * sides) + 1);
+            return { total: rolls.reduce((a, b) => a + b, 0), rolls };
+        }
         // ──────────────────────────────────────────────────────────────────────────
 
-        const statusEl = document.getElementById('status');
-        const buttons  = document.querySelectorAll('.roll-btn');
+        const statusEl    = document.getElementById('status');
+        const overlay     = document.getElementById('result-overlay');
+        const labelEl     = document.getElementById('result-label');
+        const numberEl    = document.getElementById('result-number');
+        const breakdownEl = document.getElementById('result-breakdown');
+        const buttons     = document.querySelectorAll('.roll-btn');
 
         const setReady = (ready) => buttons.forEach(b => b.disabled = !ready);
         setReady(false);
 
         const makeSeed = () => Math.random().toString(36).substring(2, 10);
+
+        let hideTimer = null;
+
+        function showResult(notation, seedStr) {
+            const result = seededRoll(notation, seedStr);
+            if (!result) return;
+            const match = notation.match(/^(\d+)d(\d+)$/i);
+            const count = parseInt(match[1]);
+
+            labelEl.textContent   = notation.toUpperCase();
+            numberEl.textContent  = result.total;
+            breakdownEl.textContent = count > 1 ? `( ${result.rolls.join(' + ')} )` : '';
+
+            overlay.classList.add('visible');
+            clearTimeout(hideTimer);
+            hideTimer = setTimeout(() => overlay.classList.remove('visible'), 4000);
+        }
+
+        function hideResult() {
+            clearTimeout(hideTimer);
+            overlay.classList.remove('visible');
+        }
 
         try {
             const firebaseConfig = {
@@ -112,23 +179,26 @@
             const db  = getDatabase(app);
             const rollsRef = ref(db, "shared_rolls");
 
+            const diceContainer = document.getElementById('dice-box');
+            diceContainer.style.width  = window.innerWidth  + 'px';
+            diceContainer.style.height = window.innerHeight + 'px';
+
             const Box = new DiceBox({
-                container:    "#dice-box",
-                assetPath:    "/Dragonshard/assets/dice-box/assets/",
-                theme:        "default",
-                themeColor:   "#ffffff",
-                labelColor:   "#000000",
-                scale:        7,
-                throwForce:   12,
-                spinForce:    12,
+                container:      "#dice-box",
+                assetPath:      "/Dragonshard/assets/dice-box/assets/",
+                theme:          "default",
+                themeColor:     "#ffffff",
+                labelColor:     "#000000",
+                scale:          7,
+                throwForce:     12,
+                spinForce:      12,
                 startingHeight: 15,
-                // Pass the CANONICAL dimensions — not window.innerWidth/Height
-                width:  PHYSICS_W,
-                height: PHYSICS_H,
+                width:  window.innerWidth,
+                height: window.innerHeight,
             });
 
             await Box.init();
-            Box.updateConfig({ width: PHYSICS_W, height: PHYSICS_H });
+            Box.updateConfig({ width: window.innerWidth, height: window.innerHeight });
 
             statusEl.innerText = "Arena Ready";
             setReady(true);
@@ -141,10 +211,15 @@
 
                 if (data.clear) {
                     Box.clear();
-                } else if (data.notation) {
+                    hideResult();
+                } else if (data.notation && data.seed) {
                     const age = Date.now() - data.timestamp;
                     if (age < 10000) {
+                        // Trigger the 3D animation (visual only — may differ per device)
                         Box.roll(data.notation, { seed: data.seed });
+
+                        // Show the authoritative result — same on every device, every time
+                        showResult(data.notation, data.seed);
                     }
                 }
             });
