@@ -32,8 +32,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        
-        // JSDelivr AND Version 1.1.3 - no unpkg in sight.
         import DiceBox from "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.3/dist/dice-box.es.min.js";
 
         const statusEl = document.getElementById('status');
@@ -53,11 +51,11 @@
             const db = getDatabase(app);
             const rollsRef = ref(db, "shared_rolls");
 
+            // No "origin" property to cause the double-URL bug.
+            // Using your absolute GitHub folder to prevent 404s.
             const Box = new DiceBox({
                 container: "#dice-box",
-                // Forcing the physics engine to ONLY look at jsdelivr
-                origin: "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.3/dist/",
-                assetPath: "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.3/dist/assets/", 
+                assetPath: "https://terracronus.github.io/Dragonshard/assets/", 
                 theme: "default",
                 scale: 6
             });
