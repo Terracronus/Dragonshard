@@ -30,13 +30,13 @@
     </div>
 
     <script type="module">
-        console.log("🚀 [1] Script started, attempting imports...");
+        console.log("🚀 [1] Script started, bypassing unpkg...");
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         
-        // Using unpkg for everything to guarantee consistency
-        import DiceBox from "https://unpkg.com/@3d-dice/dice-box@1.1.14/dist/dice-box.es.js";
+        // Switched entirely to JSDelivr to bypass your browser's unpkg block
+        import DiceBox from "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.14/dist/dice-box.es.min.js";
 
         console.log("📦 [2] Imports successful!");
         const statusEl = document.getElementById('status');
@@ -60,12 +60,13 @@
             console.log("🎲 [4] Configuring DiceBox...");
             const Box = new DiceBox({
                 container: "#dice-box",
-                assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.14/dist/assets/", 
+                // Using JSDelivr for the assets too!
+                assetPath: "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.14/dist/assets/", 
                 theme: "default",
                 scale: 6
             });
 
-            console.log("⏳ [5] Awaiting Box.init() (If it stops here, the 3D physics engine is stuck)");
+            console.log("⏳ [5] Awaiting Box.init()...");
             await Box.init();
             
             console.log("✅ [6] Engine Ready!");
