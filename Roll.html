@@ -11,70 +11,88 @@
         .button-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .roll-btn { background: rgba(40, 0, 10, 0.6); border: 1px solid #ff3366; color: #ffcccc; padding: 12px 25px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; border-radius: 4px; transition: all 0.4s ease; font-size: 12px; }
         .roll-btn:hover { background: #ff3366; color: white; box-shadow: 0 0 20px #ff3366; }
-        #log { position: absolute; top: 20px; right: 20px; text-align: right; font-size: 12px; color: rgba(255, 255, 255, 0.5); z-index: 100; pointer-events: none; }
+        #status { position: absolute; top: 20px; right: 20px; color: #ffcccc; font-size: 12px; z-index: 100; pointer-events: none; }
     </style>
 </head>
 <body>
     <a href="index.html" style="position: absolute; top: 20px; left: 20px; z-index: 100; color: #ff3366; text-decoration: none; font-size: 11px; border: 1px solid rgba(255, 51, 102, 0.3); padding: 8px 15px; border-radius: 20px; background: rgba(10, 0, 2, 0.6);">← Exit Arena</a>
     
-    <div id="log">Status: Initializing...</div>
+    <div id="status">Loading Engine...</div>
     <div id="dice-box"></div>
     
     <div class="controls">
         <div class="button-group">
-            <button class="roll-btn" onclick="triggerRoll('1d20')">Roll D20</button>
-            <button class="roll-btn" onclick="triggerRoll('2d6')">Roll 2D6</button>
-            <button class="roll-btn" onclick="clearDice()">Clear</button>
+            <button id="btn-d20" class="roll-btn">Roll D20</button>
+            <button id="btn-2d6" class="roll-btn">Roll 2D6</button>
+            <button id="btn-clear" class="roll-btn">Clear</button>
         </div>
     </div>
 
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "dice-box": "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/dice-box.es.js"
-        }
-    }
-    </script>
-
     <script type="module">
+        // Import Firebase directly
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import DiceBox from 'dice-box';
-        import { firebaseConfig } from './config.js';
+        
+        // Import DiceBox directly from JSDelivr (fixes the "Failed to fetch" CORS error)
+        import DiceBox from "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.3/dist/dice-box.es.min.js";
 
-        // 1. Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const rollsRef = ref(db, "shared_rolls");
-
-        // 2. Initialize DiceBox (FIXED API SYNTAX)
-        const Box = new DiceBox({
-            container: "#dice-box",
-            assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/assets/",
-            theme: "rust",
-            scale: 6
-        });
-
-        await Box.init();
-        document.getElementById('log').innerText = "Status: Dice Ready!";
-
-        // 3. Listen for Firebase rolls
-        onChildAdded(rollsRef, (snapshot) => {
-            const data = snapshot.val();
-            const now = Date.now();
-            if (data.timestamp && (now - data.timestamp) < 10000) {
-                Box.roll(data.notation);
-            }
-        });
-
-        // 4. Attach to window so buttons work
-        window.triggerRoll = (notation) => {
-            push(rollsRef, { notation: notation, timestamp: serverTimestamp() });
+        // Hardcode the config here to guarantee it loads
+        const firebaseConfig = {
+            apiKey: "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
+            authDomain: "terracronus-dragonshard.firebaseapp.com",
+            projectId: "terracronus-dragonshard",
+            storageBucket: "terracronus-dragonshard.firebasestorage.app",
+            messagingSenderId: "479723332460",
+            appId: "1:479723332460:web:2ea5b21c67ddc70b018949",
+            databaseURL: "https://terracronus-dragonshard-default-rtdb.firebaseio.com" 
         };
 
-        window.clearDice = () => Box.clear();
-        Box.onCanvasClick = () => Box.clear();
+        const statusEl = document.getElementById('status');
+
+        try {
+            // 1. Start Firebase
+            const app = initializeApp(firebaseConfig);
+            const db = getDatabase(app);
+            const rollsRef = ref(db, "shared_rolls");
+
+            // 2. Start DiceBox
+            const Box = new DiceBox({
+                container: "#dice-box",
+                assetPath: "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.3/dist/assets/",
+                theme: "default",
+                scale: 6
+            });
+
+            await Box.init();
+            statusEl.innerText = "Arena Ready";
+
+            // 3. Listen for incoming rolls
+            onChildAdded(rollsRef, (snapshot) => {
+                const data = snapshot.val();
+                const now = Date.now();
+                // Only roll if it happened in the last 10 seconds
+                if (data.timestamp && (now - data.timestamp) < 10000) {
+                    Box.roll(data.notation);
+                }
+            });
+
+            // 4. Bind Buttons directly (Guaranteed to work, bypasses window scope)
+            document.getElementById('btn-d20').addEventListener('click', () => {
+                push(rollsRef, { notation: '1d20', timestamp: serverTimestamp() });
+            });
+
+            document.getElementById('btn-2d6').addEventListener('click', () => {
+                push(rollsRef, { notation: '2d6', timestamp: serverTimestamp() });
+            });
+
+            document.getElementById('btn-clear').addEventListener('click', () => {
+                Box.clear();
+            });
+
+        } catch (error) {
+            console.error(error);
+            statusEl.innerText = "Connection Failed";
+        }
     </script>
 </body>
 </html>
