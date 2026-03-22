@@ -16,11 +16,13 @@
             background-image: radial-gradient(circle, #1a0005 0%, #000000 100%); 
         }
         
-        /* Fixed positioning guarantees it uses the exact screen bounds */
+        /* Force the container to snap to the absolute edges of the screen */
         #dice-box { 
-            position: fixed; 
+            position: absolute; 
             top: 0; 
             left: 0; 
+            right: 0;
+            bottom: 0;
             width: 100vw; 
             height: 100vh; 
             z-index: 1; 
@@ -78,23 +80,25 @@
             const db = getDatabase(app);
             const rollsRef = ref(db, "shared_rolls");
 
-            // Pause for just a moment to ensure the browser has fully drawn the 100vw/100vh box
-            // before the physics engine calculates its boundary walls.
-            await new Promise(resolve => setTimeout(resolve, 50));
-
             const Box = new DiceBox({
                 container: "#dice-box",
                 assetPath: "/Dragonshard/assets/dice-box/assets/",
                 theme: "default",
                 themeColor: "#ffffff",
                 labelColor: "#000000",
-                scale: 28,               // Big and crisp, but safe for the physics engine
-                throwForce: 12,          // Solid toss
-                spinForce: 12,           // Good tumbling
-                startingHeight: 15       // Drop from high enough so they don't clip the spawn zone walls
+                scale: 28,               
+                throwForce: 12,          
+                spinForce: 12,           
+                startingHeight: 15       
             });
 
             await Box.init();
+            
+            // --- THE FIX ---
+            // Force the physics engine to redraw its boundaries to match the true screen size
+            // destroying the default 300x150 constraint.
+            window.dispatchEvent(new Event('resize'));
+            
             statusEl.innerText = "Arena Ready";
             setReady(true);
 
