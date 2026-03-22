@@ -7,31 +7,25 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>The Shard</title>
     <style>
-        /* Force the page to be a perfect, non-scrolling full screen */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { 
-            width: 100%; 
-            height: 100%; 
+            width: 100%; height: 100%; 
             background-color: #000; 
             overflow: hidden; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: flex; justify-content: center; align-items: center;
         }
 
-        /* This ensures the GIF stretches to fill any phone screen perfectly */
-        .magic-bg {
+        /* The Canvas sits behind everything */
+        #canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover; /* This prevents the "black bars" effect */
             z-index: 1;
-            opacity: 0.8; /* Slightly dimmed so the button pops */
         }
 
-        /* The Arcane Button */
+        /* The UI Button */
         .arcane-link {
             position: relative;
             z-index: 10;
@@ -42,30 +36,114 @@
             text-transform: uppercase;
             text-decoration: none;
             letter-spacing: 4px;
-            background: rgba(75, 0, 130, 0.4); 
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            border-radius: 50px;
-            box-shadow: 0 0 25px rgba(140, 0, 255, 0.6);
-            animation: portal-glow 3s infinite ease-in-out;
+            background: rgba(43, 0, 255, 0.2); 
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 60px;
+            box-shadow: 0 0 30px rgba(140, 0, 255, 0.5);
+            animation: portal-pulse 3s infinite ease-in-out;
             text-align: center;
-            text-shadow: 0px 0px 10px rgba(255,255,255,0.7);
+            text-shadow: 0px 0px 8px rgba(255,255,255,0.8);
         }
 
-        @keyframes portal-glow {
-            0%, 100% { box-shadow: 0 0 15px rgba(140, 0, 255, 0.4); border-color: rgba(255,255,255,0.3); }
-            50% { box-shadow: 0 0 45px rgba(212, 170, 255, 0.8); border-color: rgba(255,255,255,0.9); }
+        @keyframes portal-pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(140, 0, 255, 0.3); border-color: rgba(255,255,255,0.2); }
+            50% { box-shadow: 0 0 50px rgba(212, 170, 255, 0.7); border-color: rgba(255,255,255,0.8); }
         }
     </style>
 </head>
 <body>
 
-    <img src="vortexgif.gif" alt="Magic Vortex" class="magic-bg">
+    <canvas id="canvas"></canvas>
 
     <a href="https://YOUR-SECRET-LINK.com" class="arcane-link">
         Gaze Into the Shard
     </a>
 
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const particleCount = 100;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.init();
+            }
+            init() {
+                this.x = (Math.random() - 0.5) * canvas.width;
+                this.y = (Math.random() - 0.5) * canvas.height;
+                this.z = Math.random() * canvas.width; // Depth
+                this.px = 0;
+                this.py = 0;
+            }
+            update() {
+                this.z -= 4; // Speed of movement towards viewer
+                if (this.z <= 0) this.init(); // Reset to back of tunnel
+
+                // Project 3D to 2D
+                const factor = 400 / this.z;
+                this.px = this.x * factor + canvas.width / 2;
+                this.py = this.y * factor + canvas.height / 2;
+            }
+            draw() {
+                const size = (1 - this.z / canvas.width) * 3;
+                const opacity = (1 - this.z / canvas.width);
+                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.px, this.py, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function setup() {
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function drawLines() {
+            ctx.strokeStyle = 'rgba(140, 0, 255, 0.15)'; // Faint magic lines
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].px - particles[j].px;
+                    const dy = particles[i].py - particles[j].py;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < 100) { // Connect nearby particles
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].px, particles[i].py);
+                        ctx.lineTo(particles[j].px, particles[j].py);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Trailing effect
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            drawLines();
+            requestAnimationFrame(animate);
+        }
+
+        setup();
+        animate();
+    </script>
 </body>
 </html>
