@@ -13,12 +13,12 @@
             position: relative; z-index: 10; padding: 22px 45px;
             font-family: 'serif'; font-size: 18px; color: white;
             text-transform: uppercase; text-decoration: none; letter-spacing: 4px;
-            background: rgba(30, 0, 60, 0.3); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(140, 0, 255, 0.4); border-radius: 60px;
-            box-shadow: 0 0 25px rgba(140, 0, 255, 0.3); animation: pulse 4s infinite ease-in-out;
-            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            background: rgba(20, 0, 40, 0.4); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(140, 0, 255, 0.5); border-radius: 60px;
+            box-shadow: 0 0 25px rgba(140, 0, 255, 0.4); animation: pulse 4s infinite ease-in-out;
+            text-shadow: 0 0 10px rgba(255,255,255,0.6);
         }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 40px rgba(180, 100, 255, 0.6); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 50px rgba(180, 100, 255, 0.7); } }
     </style>
 </head>
 <body>
@@ -29,7 +29,7 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
-        const particleCount = 60; // Fewer, larger, softer particles
+        const particleCount = 150; // Tripled for high density
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -44,29 +44,32 @@
             }
             init(isFirstLoad = false) {
                 this.angle = Math.random() * Math.PI * 2;
-                this.radius = 100 + Math.random() * 150;
+                // Randomized radius to fill the "tunnel walls" more thickly
+                this.radius = 80 + Math.random() * 220; 
                 this.z = isFirstLoad ? Math.random() * 1000 : 1000;
-                this.speed = 2 + Math.random() * 2; // Slower for "ethereal" feel
-                this.rotationSpeed = 0.005 + Math.random() * 0.01;
-                this.hue = 260 + Math.random() * 40; // Purples and magentas
-                this.sizeBase = 5 + Math.random() * 15;
+                this.speed = 1.5 + Math.random() * 2.5; 
+                this.rotationSpeed = 0.003 + Math.random() * 0.008;
+                this.hue = 250 + Math.random() * 50; 
+                // Increased base size for "thicker" wisps
+                this.sizeBase = 15 + Math.random() * 25; 
             }
             update() {
                 this.z -= this.speed;
                 this.angle += this.rotationSpeed;
                 if (this.z < 1) this.init();
 
-                const scale = 400 / (400 + this.z);
-                this.x = canvas.width / 2 + Math.cos(this.angle) * this.radius * (1 + (1000 - this.z) / 300);
-                this.y = canvas.height / 2 + Math.sin(this.angle) * this.radius * (1 + (1000 - this.z) / 300);
-                this.alpha = Math.min(0.5, (1000 - this.z) / 1500);
-                this.size = this.sizeBase * scale * 5;
+                const scale = 500 / (500 + this.z);
+                this.x = canvas.width / 2 + Math.cos(this.angle) * this.radius * (1 + (1000 - this.z) / 250);
+                this.y = canvas.height / 2 + Math.sin(this.angle) * this.radius * (1 + (1000 - this.z) / 250);
+                
+                // Increased opacity for more presence
+                this.alpha = Math.min(0.6, (1000 - this.z) / 1200);
+                this.size = this.sizeBase * scale * 6;
             }
             draw() {
-                // Radial gradient for "wispy" soft edges
                 const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
-                grd.addColorStop(0, `hsla(${this.hue}, 100%, 70%, ${this.alpha})`);
-                grd.addColorStop(0.5, `hsla(${this.hue}, 100%, 50%, ${this.alpha * 0.3})`);
+                grd.addColorStop(0, `hsla(${this.hue}, 100%, 75%, ${this.alpha})`);
+                grd.addColorStop(0.4, `hsla(${this.hue}, 100%, 50%, ${this.alpha * 0.4})`);
                 grd.addColorStop(1, `hsla(${this.hue}, 100%, 20%, 0)`);
                 
                 ctx.fillStyle = grd;
@@ -81,12 +84,11 @@
         }
 
         function animate() {
-            // "Ghosting" effect - don't clear the screen fully to create trails
+            // Slower ghosting (0.1 instead of 0.15) makes trails stay much longer
             ctx.globalCompositeOperation = 'source-over';
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; 
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Additive blending makes overlapping magic look brighter
             ctx.globalCompositeOperation = 'lighter';
 
             particles.forEach(p => {
