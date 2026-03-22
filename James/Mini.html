@@ -2,26 +2,90 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manifested Soul</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Soul Manifestation - Carlo</title>
+    
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+
     <style>
-        body, html { margin: 0; height: 100%; background: #050002; overflow: hidden; font-family: serif; }
-        model-viewer { width: 100%; height: 100%; --poster-color: transparent; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            width: 100%; height: 100%; 
+            background-color: #0a0002; 
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'serif'; color: white; overflow: hidden;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%; 
+            --poster-color: transparent;
+        }
+
+        /* Nav button to get back to the Hub choices */
         .back-nav {
-            position: absolute; top: 20px; left: 20px; z-index: 10;
-            color: #ff3366; text-decoration: none; text-transform: uppercase; 
-            letter-spacing: 2px; font-size: 12px; border-bottom: 1px solid #ff3366;
+            position: absolute; 
+            top: 30px; 
+            left: 20px; 
+            z-index: 100;
+            color: #ff3366; 
+            text-decoration: none; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            font-size: 11px; 
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: rgba(10, 0, 2, 0.6);
+            backdrop-filter: blur(5px);
+        }
+
+        .lore-container {
+            position: absolute;
+            bottom: 40px;
+            text-align: center;
+            width: 100%;
+            pointer-events: none; 
+            background: linear-gradient(to top, rgba(10,0,2,0.9) 0%, rgba(10,0,2,0) 100%);
+            padding-bottom: 20px;
+            padding-top: 40px;
+        }
+
+        h1 {
+            font-size: 24px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: rgba(255, 220, 220, 0.9);
+            text-shadow: 0 0 15px rgba(255, 0, 50, 0.8);
+            margin-bottom: 5px;
+        }
+        
+        p {
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: rgba(255, 100, 150, 0.7);
+            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
-    <a href="Hub.html" class="back-nav">← Return to the Hub</a>
-    
+
+    <a href="Hub.html" class="back-nav">← Hub</a>
+
     <model-viewer 
-        src="James-Mini.glb" 
+        src="Carlo-Mini.glb" 
         alt="Larris' Manifested Soul" 
-        auto-rotate camera-controls bounds="tight" exposure="1.2">
+        auto-rotate 
+        camera-controls 
+        bounds="tight"
+        shadow-intensity="1.5"
+        exposure="1.2">
     </model-viewer>
+
+    <div class="lore-container">
+        <h1>Larris' Manifested Soul</h1>
+        <p>Swipe to Inspect the Soul</p>
+    </div>
+
 </body>
 </html>
