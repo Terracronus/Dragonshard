@@ -30,19 +30,15 @@
     </div>
 
     <script type="module">
-        console.log("🚀 [1] Script started...");
-        
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         
-        // Fixed: Removed the ".min" so JSDelivr actually finds the file
-        import DiceBox from "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.14/dist/dice-box.es.js";
+        // Rolled back to version 1.1.3 which actually exists on the CDN!
+        import DiceBox from "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/dice-box.es.min.js";
 
-        console.log("📦 [2] Imports successful!");
         const statusEl = document.getElementById('status');
 
         try {
-            console.log("🔥 [3] Starting Firebase...");
             const firebaseConfig = {
                 apiKey: "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
                 authDomain: "terracronus-dragonshard.firebaseapp.com",
@@ -57,39 +53,31 @@
             const db = getDatabase(app);
             const rollsRef = ref(db, "shared_rolls");
 
-            console.log("🎲 [4] Configuring DiceBox...");
             const Box = new DiceBox({
                 container: "#dice-box",
-                // Pointing to your absolute GitHub Pages folder so the Web Worker doesn't get blocked
-                assetPath: "https://terracronus.github.io/Dragonshard/assets/", 
+                // When using a CDN, we MUST explicitly define the origin and assetPath like this
+                origin: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/",
+                assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/assets/", 
                 theme: "default",
                 scale: 6
             });
 
-            console.log("⏳ [5] Awaiting Box.init()...");
             await Box.init();
-            
-            console.log("✅ [6] Engine Ready!");
             statusEl.innerText = "Arena Ready";
 
-            // Listen for rolls
             onChildAdded(rollsRef, (snapshot) => {
                 const data = snapshot.val();
                 const now = Date.now();
                 if (data.timestamp && (now - data.timestamp) < 10000) {
-                    console.log("📥 Received roll from Firebase:", data.notation);
                     Box.roll(data.notation);
                 }
             });
 
-            // Bind Buttons
             document.getElementById('btn-d20').addEventListener('click', () => {
-                console.log("📤 Sending 1d20 to Firebase...");
                 push(rollsRef, { notation: '1d20', timestamp: serverTimestamp() });
             });
 
             document.getElementById('btn-2d6').addEventListener('click', () => {
-                console.log("📤 Sending 2d6 to Firebase...");
                 push(rollsRef, { notation: '2d6', timestamp: serverTimestamp() });
             });
 
@@ -98,7 +86,7 @@
             });
 
         } catch (error) {
-            console.error("❌ Critical Engine Failure:", error);
+            console.error("Critical Engine Failure:", error);
             statusEl.innerText = "Connection Failed";
         }
     </script>
