@@ -16,7 +16,6 @@
             background-image: radial-gradient(circle, #1a0005 0%, #000000 100%); 
         }
         
-        /* Force the container to snap to the absolute edges of the screen */
         #dice-box { 
             position: absolute; 
             top: 0; 
@@ -27,7 +26,6 @@
             height: 100vh; 
             z-index: 1; 
         }
-        /* Force the canvas DiceBox injects to actually fill the container */
         #dice-box canvas {
             position: absolute !important;
             top: 0 !important;
@@ -71,7 +69,25 @@
         const setReady = (ready) => buttons.forEach(b => b.disabled = !ready);
         setReady(false);
 
-        const makeSeed = () => Math.random().toString(36).substring(2, 10);
+        // Parse "2d6" → { qty: 2, sides: 6 }
+        const parseNotation = (notation) => {
+            const match = notation.match(/^(\d+)d(\d+)$/i);
+            if (!match) return null;
+            return { qty: parseInt(match[1]), sides: parseInt(match[2]) };
+        };
+
+        // Roll the actual numbers here — one authoritative result shared to all clients
+        const generateResults = (qty, sides) => {
+            return Array.from({ length: qty }, () => Math.floor(Math.random() * sides) + 1);
+        };
+
+        // Build the DiceBox array notation with forced values:
+        // [{ sides: 20, value: 14 }, { sides: 6, value: 3 }, ...]
+        const buildDiceArray = (notation, results) => {
+            const parsed = parseNotation(notation);
+            if (!parsed) return null;
+            return results.map(value => ({ sides: parsed.sides, value }));
+        };
 
         try {
             const firebaseConfig = {
@@ -88,8 +104,6 @@
             const db = getDatabase(app);
             const rollsRef = ref(db, "shared_rolls");
 
-            // Set explicit pixel dimensions BEFORE DiceBox reads offsetWidth/offsetHeight
-            // CSS vw/vh can still be unresolved when the worker initialises
             const diceContainer = document.getElementById('dice-box');
             diceContainer.style.width = window.innerWidth + 'px';
             diceContainer.style.height = window.innerHeight + 'px';
@@ -109,8 +123,6 @@
             });
 
             await Box.init();
-
-            // updateConfig re-sends dimensions to the physics worker after the canvas exists
             Box.updateConfig({ width: window.innerWidth, height: window.innerHeight });
             
             statusEl.innerText = "Arena Ready";
@@ -124,18 +136,28 @@
 
                 if (data.clear) {
                     Box.clear();
-                } else if (data.notation) {
+                } else if (data.notation && data.results) {
                     const age = Date.now() - data.timestamp;
                     if (age < 10000) {
-                        Box.roll(data.notation, { seed: data.seed });
+                        // Build array with pre-determined values so every client shows the same result
+                        const diceArray = buildDiceArray(data.notation, data.results);
+                        if (diceArray) {
+                            Box.roll(diceArray);
+                        }
                     }
                 }
             });
 
             const sendRoll = (notation) => {
+                const parsed = parseNotation(notation);
+                if (!parsed) return;
+
+                // Generate the result once here — this is the single source of truth
+                const results = generateResults(parsed.qty, parsed.sides);
+
                 push(rollsRef, {
                     notation,
-                    seed: makeSeed(),
+                    results,   // e.g. [14] or [3, 5]
                     timestamp: Date.now()
                 });
             };
