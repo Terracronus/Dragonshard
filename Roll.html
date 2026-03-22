@@ -1,63 +1,87 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shared Dice Arena</title>
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-          "dice-box": "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/dice-box.es.js"
-        }
-      }
-    </script>
     <style>
-        #dice-container { width: 100vw; height: 100vh; background: #0a0002; }
-        .ui { position: absolute; bottom: 20px; width: 100%; text-align: center; z-index: 10; }
-        button { padding: 15px 30px; background: #ff3366; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        body { margin: 0; background: #0a0002; color: white; font-family: serif; overflow: hidden; }
+        #dice-box { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
+        .controls { 
+            position: absolute; bottom: 30px; width: 100%; text-align: center; z-index: 100;
+            display: flex; justify-content: center; gap: 20px;
+        }
+        .roll-btn {
+            background: rgba(255, 51, 102, 0.2); border: 1px solid #ff3366; color: white;
+            padding: 15px 30px; text-transform: uppercase; letter-spacing: 2px;
+            cursor: pointer; border-radius: 4px; transition: 0.3s;
+        }
+        .roll-btn:hover { background: #ff3366; box-shadow: 0 0 20px #ff3366; }
     </style>
 </head>
 <body>
-    <div id="dice-container"></div>
-    <div class="ui">
-        <button id="rollBtn">Roll 1d20</button>
+
+    <div id="dice-box"></div>
+
+    <div class="controls">
+        <button class="roll-btn" onclick="triggerRoll('1d20')">Roll D20</button>
+        <button class="roll-btn" onclick="triggerRoll('2d6')">Roll 2D6</button>
     </div>
 
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "dice-box": "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/dice-box.es.js"
+        }
+    }
+    </script>
+
     <script type="module">
-        import DiceBox from 'dice-box';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import DiceBox from 'dice-box';
 
-        // 2. Your Firebase Config (Get this from your Firebase Console)
-        const firebaseConfig = { /* PASTE YOUR CONFIG HERE */ };
+        const firebaseConfig = {
+            apiKey: "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
+            authDomain: "terracronus-dragonshard.firebaseapp.com",
+            projectId: "terracronus-dragonshard",
+            storageBucket: "terracronus-dragonshard.firebasestorage.app",
+            messagingSenderId: "479723332460",
+            appId: "1:479723332460:web:2ea5b21c67ddc70b018949",
+            // If your dice don't roll, add: databaseURL: "https://your-db-url.firebaseio.com"
+        };
+
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const rollsRef = ref(db, "arena/rolls");
+        const rollsRef = ref(db, "shared_rolls");
 
-        // 3. Setup 3D Dice Box
-        const Box = new DiceBox("#dice-container", {
+        const Box = new DiceBox("#dice-box", {
             assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/assets/",
-            theme: "dark",
-            offscreen: true
+            theme: "rust",
+            offscreen: true,
+            scale: 6
         });
 
         await Box.init();
 
-        // 4. Listen for shared rolls
-        // When ANYONE pushes a roll, EVERYONE sees the animation
         onChildAdded(rollsRef, (snapshot) => {
             const data = snapshot.val();
-            // Optional: Skip if the roll is older than 1 minute
-            Box.roll(data.notation);
+            const now = Date.now();
+            // Sync roll if it's new (last 10 seconds)
+            if (data.timestamp && (now - data.timestamp) < 10000) {
+                Box.roll(data.notation);
+            }
         });
 
-        // 5. Trigger a roll
-        document.getElementById('rollBtn').onclick = () => {
+        window.triggerRoll = (notation) => {
             push(rollsRef, {
-                user: "PlayerName", // You can pull this from your folder structure
-                notation: "1d20",
+                notation: notation,
                 timestamp: serverTimestamp()
             });
         };
+
+        Box.onCanvasClick = () => Box.clear();
     </script>
 </body>
 </html>
