@@ -4,84 +4,250 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Shared Dice Arena</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { 
-            margin: 0; 
-            background: #0a0002; 
-            color: white; 
-            font-family: 'serif'; 
-            overflow: hidden; 
-            height: 100vh; 
-            width: 100vw; 
-            background-image: radial-gradient(circle, #1a0005 0%, #000000 100%); 
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0a0002;
+            color: white;
+            font-family: 'Cinzel', serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            background-image: radial-gradient(circle at center, #1a0005 0%, #000000 100%);
         }
 
-        #dice-box { 
-            position: absolute; 
-            top: 0; left: 0; right: 0; bottom: 0;
-            width: 100vw; height: 100vh; 
-            z-index: 1; 
-        }
-        #dice-box canvas {
-            position: absolute !important;
-            top: 0 !important; left: 0 !important;
-            width: 100% !important; height: 100% !important;
+        /* Subtle grid atmosphere */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,51,102,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,51,102,0.04) 1px, transparent 1px);
+            background-size: 70px 70px;
+            pointer-events: none;
+            z-index: 0;
         }
 
-        /* Result overlay — shows the authoritative seeded result */
-        #result-overlay {
+        /* ── DICE ANIMATION ──────────────────────────────── */
+        #arena {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .die {
             position: absolute;
+            pointer-events: none;
+            will-change: transform, top, left, opacity;
+        }
+
+        /* D6 face */
+        .die-d6 {
+            width: 68px;
+            height: 68px;
+            background: linear-gradient(135deg, #f8f8f8 0%, #d8d8d8 100%);
+            border-radius: 13px;
+            border: 2px solid #bbb;
+            box-shadow:
+                inset 3px 3px 6px rgba(255,255,255,0.9),
+                inset -3px -3px 6px rgba(0,0,0,0.15),
+                0 6px 20px rgba(0,0,0,0.6),
+                0 0 35px rgba(255,51,102,0.25);
+            position: relative;
+        }
+
+        /* pip grid: 3 cols × 3 rows, all named */
+        .d6-pips {
+            display: grid;
+            grid-template-areas:
+                "tl . tr"
+                "ml c mr"
+                "bl . br";
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            width: 100%;
+            height: 100%;
+            padding: 9px;
+        }
+
+        .pip {
+            width: 11px;
+            height: 11px;
+            background: radial-gradient(circle at 35% 35%, #3a0010, #1a0005);
+            border-radius: 50%;
+            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.6), 0 1px 2px rgba(255,255,255,0.1);
+            align-self: center;
+            justify-self: center;
+        }
+
+        /* D20 face */
+        .die-d20 {
+            width: 78px;
+            height: 78px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .die-d20 svg {
+            width: 78px;
+            height: 78px;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.7)) drop-shadow(0 0 25px rgba(255,51,102,0.35));
+        }
+
+        .die-d20 .d20-value {
+            position: absolute;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: #1a0005;
+            line-height: 1;
+            margin-top: 8px;
+        }
+
+        /* The actual flight animation */
+        @keyframes tumble-across {
+            0%   { transform: translate(0px, 0px)    rotate(0deg)   scale(0.4); opacity: 0; }
+            6%   { opacity: 1;                                                               }
+            8%   { transform: translate(5vw, 5vh)    rotate(60deg)  scale(1);               }
+            100% { transform: translate(115vw, 115vh) rotate(var(--spin, 600deg)) scale(0.85); opacity: 0; }
+        }
+
+        .die {
+            top: -90px;
+            left: -90px;
+            animation: tumble-across var(--dur, 2.1s) cubic-bezier(0.2, 0.5, 0.6, 0.95)
+                       var(--delay, 0s) both;
+        }
+
+        /* ── RESULT DISPLAY ──────────────────────────────── */
+        #result-display {
+            position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -60%);
+            transform: translate(-50%, -50%);
             z-index: 200;
             text-align: center;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.4s ease;
         }
-        #result-overlay.visible { opacity: 1; }
 
-        #result-label {
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 3px;
+        #result-display.visible { opacity: 1; }
+
+        .res-label {
+            font-size: 10px;
+            letter-spacing: 5px;
             color: #ff3366;
-            margin-bottom: 8px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
         }
-        #result-number {
-            font-size: 96px;
+
+        .res-number {
+            font-size: 88px;
+            font-weight: 700;
             line-height: 1;
             color: #fff;
-            text-shadow: 0 0 40px #ff3366, 0 0 80px #ff3366;
-        }
-        #result-breakdown {
-            font-size: 14px;
-            color: #ffaaaa;
-            margin-top: 6px;
-            letter-spacing: 1px;
+            text-shadow: 0 0 40px rgba(255,51,102,0.9), 0 0 90px rgba(255,51,102,0.4);
         }
 
-        .controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .res-number.pop {
+            animation: pop-in 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+
+        @keyframes pop-in {
+            0%   { transform: scale(0.3); opacity: 0; }
+            70%  { transform: scale(1.12); }
+            100% { transform: scale(1);   opacity: 1; }
+        }
+
+        .res-breakdown {
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: rgba(255,204,204,0.7);
+            margin-top: 8px;
+            min-height: 1.4em;
+        }
+
+        /* ── UI CHROME ──────────────────────────────────── */
+        .controls {
+            position: fixed;
+            bottom: 40px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
         .button-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        .roll-btn { background: rgba(40, 0, 10, 0.6); border: 1px solid #ff3366; color: #ffcccc; padding: 12px 25px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; border-radius: 4px; transition: all 0.4s ease; font-size: 12px; }
-        .roll-btn:hover { background: #ff3366; color: white; box-shadow: 0 0 20px #ff3366; }
-        .roll-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        #status { position: absolute; top: 20px; right: 20px; color: #ffcccc; font-size: 12px; z-index: 100; pointer-events: none; }
-        .back-nav { position: absolute; top: 20px; left: 20px; z-index: 100; color: #ff3366; text-decoration: none; font-size: 11px; border: 1px solid rgba(255, 51, 102, 0.3); padding: 8px 15px; border-radius: 20px; background: rgba(10, 0, 2, 0.6); text-transform: uppercase; letter-spacing: 2px; }
+
+        .roll-btn {
+            background: rgba(40,0,10,0.65);
+            border: 1px solid #ff3366;
+            color: #ffcccc;
+            padding: 12px 25px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.35s ease;
+            font-size: 11px;
+            font-family: 'Cinzel', serif;
+            backdrop-filter: blur(4px);
+        }
+
+        .roll-btn:hover { background: #ff3366; color: #fff; box-shadow: 0 0 22px rgba(255,51,102,0.7); }
+        .roll-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        #status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #ffcccc;
+            font-size: 10px;
+            letter-spacing: 3px;
+            z-index: 100;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+
+        .back-nav {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            color: #ff3366;
+            text-decoration: none;
+            font-size: 10px;
+            border: 1px solid rgba(255,51,102,0.35);
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: rgba(10,0,2,0.65);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'Cinzel', serif;
+            backdrop-filter: blur(4px);
+        }
     </style>
 </head>
 <body>
     <a href="index.html" class="back-nav">← Exit Arena</a>
+    <div id="status">Connecting…</div>
+    <div id="arena"></div>
 
-    <div id="status">Loading Engine...</div>
-    <div id="dice-box"></div>
-
-    <!-- Authoritative result shown on top of the animation -->
-    <div id="result-overlay">
-        <div id="result-label">—</div>
-        <div id="result-number">—</div>
-        <div id="result-breakdown"></div>
+    <div id="result-display">
+        <div class="res-label"  id="res-label">—</div>
+        <div class="res-number" id="res-number">—</div>
+        <div class="res-breakdown" id="res-breakdown"></div>
     </div>
 
     <div class="controls">
@@ -93,112 +259,172 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import DiceBox from "https://terracronus.github.io/Dragonshard/assets/dice-box/dice-box.es.min.js";
+        import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded }
+                                  from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // ─── Seeded RNG (Mulberry32) ───────────────────────────────────────────────
-        // Converts the seed string into a deterministic integer hash.
-        function seedToInt(str) {
-            let h = 0;
-            for (let i = 0; i < str.length; i++) {
-                h = Math.imul(31, h) + str.charCodeAt(i) | 0;
-            }
+        // ─────────────────────────────────────────────────────────────────────
+        // SEEDED RNG  –  mulberry32
+        //   • Pure maths, zero physics, identical result on every device
+        //   • The seed is shared via Firebase so everyone sees the same number
+        // ─────────────────────────────────────────────────────────────────────
+        function mulberry32(a) {
+            return () => {
+                a |= 0;
+                a  = (a + 0x6D2B79F5) | 0;
+                let t = Math.imul(a ^ (a >>> 15), 1 | a);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function hashSeed(str) {
+            let h = 5381;
+            for (let i = 0; i < str.length; i++)
+                h = (((h << 5) + h) + str.charCodeAt(i)) | 0;
             return h >>> 0;
         }
 
-        // Returns a fast, high-quality PRNG function from a numeric seed.
-        function mulberry32(seed) {
-            return function() {
-                seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-                let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-                t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-                return ((t ^ t >>> 14) >>> 0) / 4294967296;
-            };
+        function rollDice(sides, count, seed) {
+            const rng = mulberry32(hashSeed(seed));
+            return Array.from({ length: count }, () => Math.floor(rng() * sides) + 1);
         }
 
-        // Roll `count`d`sides` using the seed. Returns { total, rolls }.
-        // Identical on every device for the same seed string — guaranteed.
-        function seededRoll(notation, seedStr) {
-            const match = notation.match(/^(\d+)d(\d+)$/i);
-            if (!match) return null;
-            const count = parseInt(match[1]);
-            const sides = parseInt(match[2]);
-            const rng   = mulberry32(seedToInt(seedStr));
-            const rolls = Array.from({ length: count }, () => Math.floor(rng() * sides) + 1);
-            return { total: rolls.reduce((a, b) => a + b, 0), rolls };
+        // ─────────────────────────────────────────────────────────────────────
+        // DICE BUILDERS
+        // ─────────────────────────────────────────────────────────────────────
+        // Which pip slots are lit for each d6 value
+        const PIP_MAP = {
+            1: ['c'],
+            2: ['tl','br'],
+            3: ['tl','c','br'],
+            4: ['tl','tr','bl','br'],
+            5: ['tl','tr','c','bl','br'],
+            6: ['tl','tr','ml','mr','bl','br'],
+        };
+
+        function buildD6(value) {
+            const face = document.createElement('div');
+            face.className = 'die die-d6';
+
+            const grid = document.createElement('div');
+            grid.className = 'd6-pips';
+
+            const lit = new Set(PIP_MAP[value] ?? []);
+            // All 7 named grid areas
+            ['tl','tr','ml','c','mr','bl','br'].forEach(area => {
+                const cell = document.createElement('div');
+                cell.style.cssText = `grid-area:${area};display:flex;align-items:center;justify-content:center;`;
+                if (lit.has(area)) {
+                    const pip = document.createElement('div');
+                    pip.className = 'pip';
+                    cell.appendChild(pip);
+                }
+                grid.appendChild(cell);
+            });
+
+            face.appendChild(grid);
+            return face;
         }
-        // ──────────────────────────────────────────────────────────────────────────
 
-        const statusEl    = document.getElementById('status');
-        const overlay     = document.getElementById('result-overlay');
-        const labelEl     = document.getElementById('result-label');
-        const numberEl    = document.getElementById('result-number');
-        const breakdownEl = document.getElementById('result-breakdown');
-        const buttons     = document.querySelectorAll('.roll-btn');
+        function buildD20(value) {
+            const wrap = document.createElement('div');
+            wrap.className = 'die die-d20';
+            // Icosahedron front-face approximation (upward triangle + inner border)
+            wrap.innerHTML = `
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="dg" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%"   stop-color="#f8f8f8"/>
+                            <stop offset="100%" stop-color="#d0d0d0"/>
+                        </linearGradient>
+                    </defs>
+                    <polygon points="50,6 96,80 4,80"
+                             fill="url(#dg)" stroke="#bbb" stroke-width="2.5"/>
+                    <polygon points="50,20 82,76 18,76"
+                             fill="none" stroke="rgba(26,0,5,0.12)" stroke-width="1.2"/>
+                </svg>
+                <span class="d20-value">${value}</span>
+            `;
+            return wrap;
+        }
 
-        const setReady = (ready) => buttons.forEach(b => b.disabled = !ready);
+        // ─────────────────────────────────────────────────────────────────────
+        // LAUNCH ANIMATION  –  all dice fly top-left → bottom-right
+        // ─────────────────────────────────────────────────────────────────────
+        let clearTimer = null;
+
+        function launchDice(type, values) {
+            const arena = document.getElementById('arena');
+
+            values.forEach((val, i) => {
+                const el = type === 'd20' ? buildD20(val) : buildD6(val);
+
+                // Stagger multi-dice slightly so they don't stack perfectly
+                const lateralShift = (i - (values.length - 1) / 2) * 55;
+                el.style.top  = `${-90 + lateralShift}px`;
+                el.style.left = `${-90 - i * 15}px`;
+                el.style.setProperty('--delay', `${i * 0.16}s`);
+                el.style.setProperty('--dur',   `${2.0 + i * 0.08}s`);
+                el.style.setProperty('--spin',  `${540 + i * 90}deg`);
+
+                arena.appendChild(el);
+                el.addEventListener('animationend', () => el.remove(), { once: true });
+            });
+
+            // ── result overlay ──
+            const total     = values.reduce((a, b) => a + b, 0);
+            const labelText = type === 'd20' ? 'D20' : '2D6';
+            const breakdown = values.length > 1
+                ? values.join(' + ') + `  =  ${total}`
+                : '';
+
+            const display   = document.getElementById('result-display');
+            const numEl     = document.getElementById('res-number');
+
+            document.getElementById('res-label').textContent     = labelText;
+            document.getElementById('res-breakdown').textContent = breakdown;
+
+            // Re-trigger pop animation
+            numEl.classList.remove('pop');
+            numEl.textContent = total;
+            void numEl.offsetWidth; // force reflow
+            numEl.classList.add('pop');
+
+            display.classList.add('visible');
+
+            if (clearTimer) clearTimeout(clearTimer);
+            clearTimer = setTimeout(() => display.classList.remove('visible'), 4500);
+        }
+
+        function clearArena() {
+            document.getElementById('arena').innerHTML = '';
+            document.getElementById('result-display').classList.remove('visible');
+            if (clearTimer) clearTimeout(clearTimer);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // FIREBASE
+        // ─────────────────────────────────────────────────────────────────────
+        const statusEl = document.getElementById('status');
+        const buttons  = document.querySelectorAll('.roll-btn');
+        const setReady = (r) => buttons.forEach(b => b.disabled = !r);
         setReady(false);
-
-        const makeSeed = () => Math.random().toString(36).substring(2, 10);
-
-        let hideTimer = null;
-
-        function showResult(notation, seedStr) {
-            const result = seededRoll(notation, seedStr);
-            if (!result) return;
-            const match = notation.match(/^(\d+)d(\d+)$/i);
-            const count = parseInt(match[1]);
-
-            labelEl.textContent   = notation.toUpperCase();
-            numberEl.textContent  = result.total;
-            breakdownEl.textContent = count > 1 ? `( ${result.rolls.join(' + ')} )` : '';
-
-            overlay.classList.add('visible');
-            clearTimeout(hideTimer);
-            hideTimer = setTimeout(() => overlay.classList.remove('visible'), 4000);
-        }
-
-        function hideResult() {
-            clearTimeout(hideTimer);
-            overlay.classList.remove('visible');
-        }
 
         try {
             const firebaseConfig = {
-                apiKey: "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
-                authDomain: "terracronus-dragonshard.firebaseapp.com",
-                projectId: "terracronus-dragonshard",
-                storageBucket: "terracronus-dragonshard.firebasestorage.app",
+                apiKey:            "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
+                authDomain:        "terracronus-dragonshard.firebaseapp.com",
+                projectId:         "terracronus-dragonshard",
+                storageBucket:     "terracronus-dragonshard.firebasestorage.app",
                 messagingSenderId: "479723332460",
-                appId: "1:479723332460:web:2ea5b21c67ddc70b018949",
-                databaseURL: "https://terracronus-dragonshard-default-rtdb.europe-west1.firebasedatabase.app/"
+                appId:             "1:479723332460:web:2ea5b21c67ddc70b018949",
+                databaseURL:       "https://terracronus-dragonshard-default-rtdb.europe-west1.firebasedatabase.app/"
             };
 
-            const app = initializeApp(firebaseConfig);
-            const db  = getDatabase(app);
+            const app      = initializeApp(firebaseConfig);
+            const db       = getDatabase(app);
             const rollsRef = ref(db, "shared_rolls");
-
-            const diceContainer = document.getElementById('dice-box');
-            diceContainer.style.width  = window.innerWidth  + 'px';
-            diceContainer.style.height = window.innerHeight + 'px';
-
-            const Box = new DiceBox({
-                container:      "#dice-box",
-                assetPath:      "/Dragonshard/assets/dice-box/assets/",
-                theme:          "default",
-                themeColor:     "#ffffff",
-                labelColor:     "#000000",
-                scale:          7,
-                throwForce:     12,
-                spinForce:      12,
-                startingHeight: 15,
-                width:  window.innerWidth,
-                height: window.innerHeight,
-            });
-
-            await Box.init();
-            Box.updateConfig({ width: window.innerWidth, height: window.innerHeight });
 
             statusEl.innerText = "Arena Ready";
             setReady(true);
@@ -210,37 +436,28 @@
                 if (!data || data.timestamp < startupTime) return;
 
                 if (data.clear) {
-                    Box.clear();
-                    hideResult();
-                } else if (data.notation && data.seed) {
-                    const age = Date.now() - data.timestamp;
-                    if (age < 10000) {
-                        // Trigger the 3D animation (visual only — may differ per device)
-                        Box.roll(data.notation, { seed: data.seed });
-
-                        // Show the authoritative result — same on every device, every time
-                        showResult(data.notation, data.seed);
+                    clearArena();
+                } else if (data.type && data.seed) {
+                    if (Date.now() - data.timestamp < 10000) {
+                        const [sides, count] = data.type === 'd20' ? [20, 1] : [6, 2];
+                        const values = rollDice(sides, count, data.seed);
+                        launchDice(data.type, values);
                     }
                 }
             });
 
-            const sendRoll = (notation) => {
-                push(rollsRef, {
-                    notation,
-                    seed:      makeSeed(),
-                    timestamp: Date.now()
-                });
-            };
+            const makeSeed = () => Math.random().toString(36).substring(2, 10);
+            const sendRoll = (type) => push(rollsRef, { type, seed: makeSeed(), timestamp: Date.now() });
 
-            document.getElementById('btn-d20').addEventListener('click', () => sendRoll('1d20'));
-            document.getElementById('btn-2d6').addEventListener('click', () => sendRoll('2d6'));
-            document.getElementById('btn-clear').addEventListener('click', () => {
-                push(rollsRef, { clear: true, timestamp: Date.now() });
-            });
+            document.getElementById('btn-d20').addEventListener('click',  () => sendRoll('d20'));
+            document.getElementById('btn-2d6').addEventListener('click',  () => sendRoll('2d6'));
+            document.getElementById('btn-clear').addEventListener('click', () =>
+                push(rollsRef, { clear: true, timestamp: Date.now() })
+            );
 
-        } catch (error) {
-            console.error("Critical Engine Failure:", error);
-            statusEl.innerText = `Engine Failed: ${error.message}`;
+        } catch (err) {
+            console.error("Critical Engine Failure:", err);
+            statusEl.innerText = `Engine Failed: ${err.message}`;
             setReady(false);
         }
     </script>
