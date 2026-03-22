@@ -16,18 +16,14 @@
             background-image: radial-gradient(circle, #1a0005 0%, #000000 100%); 
         }
         
-        /* --- THE CSS MAGNIFYING GLASS TRICK --- */
+        /* Fixed positioning guarantees it uses the exact screen bounds */
         #dice-box { 
-            position: absolute; 
+            position: fixed; 
             top: 0; 
             left: 0; 
+            width: 100vw; 
+            height: 100vh; 
             z-index: 1; 
-            /* Make the physics box smaller so walls scale correctly */
-            width: 40vw; 
-            height: 40vh; 
-            /* Blow the whole thing up 2.5x visually to fill the 100vw/100vh screen */
-            transform: scale(2.5);
-            transform-origin: top left;
         }
 
         .controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 15px; }
@@ -82,17 +78,20 @@
             const db = getDatabase(app);
             const rollsRef = ref(db, "shared_rolls");
 
+            // Pause for just a moment to ensure the browser has fully drawn the 100vw/100vh box
+            // before the physics engine calculates its boundary walls.
+            await new Promise(resolve => setTimeout(resolve, 50));
+
             const Box = new DiceBox({
                 container: "#dice-box",
                 assetPath: "/Dragonshard/assets/dice-box/assets/",
                 theme: "default",
                 themeColor: "#ffffff",
                 labelColor: "#000000",
-                // Back to a healthy physics size. The CSS scaling makes them look huge.
-                scale: 14,               
-                throwForce: 6,
-                spinForce: 6,
-                startingHeight: 8
+                scale: 28,               // Big and crisp, but safe for the physics engine
+                throwForce: 12,          // Solid toss
+                spinForce: 12,           // Good tumbling
+                startingHeight: 15       // Drop from high enough so they don't clip the spawn zone walls
             });
 
             await Box.init();
