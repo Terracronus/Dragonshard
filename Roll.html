@@ -18,10 +18,10 @@
 </head>
 <body>
     <a href="index.html" class="back-nav">← Exit Arena</a>
-    
+
     <div id="status">Loading Engine...</div>
     <div id="dice-box"></div>
-    
+
     <div class="controls">
         <div class="button-group">
             <button id="btn-d20" class="roll-btn">Roll D20</button>
@@ -33,7 +33,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import DiceBox from "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.3/dist/dice-box.es.min.js";
+
+        // Imported from YOUR GitHub Pages — not CDN — so the worker can fetch its files
+        import DiceBox from "https://terracronus.github.io/Dragonshard/assets/dice-box/dice-box.es.min.js";
 
         const statusEl = document.getElementById('status');
         const buttons = document.querySelectorAll('.roll-btn');
@@ -58,7 +60,8 @@
 
             const Box = new DiceBox({
                 container: "#dice-box",
-                assetPath: "https://terracronus.github.io/Dragonshard/assets/",
+                // Must point to YOUR hosted copy so the worker can resolve its own files
+                assetPath: "https://terracronus.github.io/Dragonshard/assets/dice-box/",
                 theme: "default",
                 scale: 6
             });
@@ -67,43 +70,34 @@
             statusEl.innerText = "Arena Ready";
             setReady(true);
 
-            // Track the startup time so we ignore stale rolls already in the DB
+            // Record startup time so we ignore stale rolls already in the DB on page load
             const startupTime = Date.now();
 
             onChildAdded(rollsRef, (snapshot) => {
                 const data = snapshot.val();
-                if (!data) return;
+                if (!data || data.timestamp < startupTime) return;
 
-                // Use client-side timestamp — avoids the serverTimestamp() null race condition
-                const age = Date.now() - (data.timestamp || 0);
-
-                if (data.notation && age < 10000) {
-                    if (data.timestamp >= startupTime) {
+                if (data.clear) {
+                    Box.clear();
+                } else if (data.notation) {
+                    const age = Date.now() - data.timestamp;
+                    if (age < 10000) {
                         Box.roll(data.notation);
                     }
                 }
             });
 
             const sendRoll = (notation) => {
-                // Use Date.now() — always immediately available, no null race
+                // Date.now() is used instead of serverTimestamp() to avoid the null race condition
                 push(rollsRef, { notation, timestamp: Date.now() });
             };
 
             document.getElementById('btn-d20').addEventListener('click', () => sendRoll('1d20'));
             document.getElementById('btn-2d6').addEventListener('click', () => sendRoll('2d6'));
 
-            // Clear is local-only; push a clear event so all clients clear
+            // Clear is synced — all clients will clear when anyone presses it
             document.getElementById('btn-clear').addEventListener('click', () => {
-                push(rollsRef, { notation: null, clear: true, timestamp: Date.now() });
-                Box.clear();
-            });
-
-            // Listen for clear events from other clients
-            onChildAdded(rollsRef, (snapshot) => {
-                const data = snapshot.val();
-                if (data?.clear && data.timestamp >= startupTime) {
-                    Box.clear();
-                }
+                push(rollsRef, { clear: true, timestamp: Date.now() });
             });
 
         } catch (error) {
