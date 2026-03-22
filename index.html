@@ -12,13 +12,13 @@
         .arcane-link {
             position: relative; z-index: 10; padding: 22px 45px;
             font-family: 'serif'; font-size: 18px; color: white;
-            text-transform: uppercase; text-decoration: none; border-radius: 60px;
-            letter-spacing: 4px; background: rgba(30, 0, 60, 0.5); 
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(180, 100, 255, 0.5);
-            box-shadow: 0 0 25px rgba(140, 0, 255, 0.4); animation: pulse 3s infinite;
+            text-transform: uppercase; text-decoration: none; letter-spacing: 4px;
+            background: rgba(30, 0, 60, 0.3); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(140, 0, 255, 0.4); border-radius: 60px;
+            box-shadow: 0 0 25px rgba(140, 0, 255, 0.3); animation: pulse 4s infinite ease-in-out;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
         }
-        @keyframes pulse { 0%, 100% { box-shadow: 0 0 20px rgba(140, 0, 255, 0.3); } 50% { box-shadow: 0 0 60px rgba(212, 170, 255, 0.6); border-color: #fff; } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 40px rgba(180, 100, 255, 0.6); } }
     </style>
 </head>
 <body>
@@ -29,7 +29,7 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
-        const particleCount = 220; // Increased for a thicker "web"
+        const particleCount = 60; // Fewer, larger, softer particles
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -39,64 +39,66 @@
         resize();
 
         class Particle {
-            constructor() { this.init(true); }
-            init(first) {
+            constructor() {
+                this.init(true);
+            }
+            init(isFirstLoad = false) {
                 this.angle = Math.random() * Math.PI * 2;
-                this.baseRadius = 140 + Math.random() * 80; 
-                this.z = first ? Math.random() * 1000 : 1000;
-                this.speed = 1.2 + Math.random() * 1.5; // MUCH slower flight
-                this.rotation = 0.004 + Math.random() * 0.008; // Slower swirl
+                this.radius = 100 + Math.random() * 150;
+                this.z = isFirstLoad ? Math.random() * 1000 : 1000;
+                this.speed = 2 + Math.random() * 2; // Slower for "ethereal" feel
+                this.rotationSpeed = 0.005 + Math.random() * 0.01;
+                this.hue = 260 + Math.random() * 40; // Purples and magentas
+                this.sizeBase = 5 + Math.random() * 15;
             }
             update() {
                 this.z -= this.speed;
-                this.angle += this.rotation;
+                this.angle += this.rotationSpeed;
                 if (this.z < 1) this.init();
 
-                const perspective = 400 / (400 + this.z);
-                const drift = (1000 - this.z) / 180;
-                this.x = canvas.width / 2 + Math.cos(this.angle) * (this.baseRadius + drift * 20) * perspective * 2;
-                this.y = canvas.height / 2 + Math.sin(this.angle) * (this.baseRadius + drift * 20) * perspective * 2;
-                this.alpha = Math.min(0.8, (1000 - this.z) / 800);
+                const scale = 400 / (400 + this.z);
+                this.x = canvas.width / 2 + Math.cos(this.angle) * this.radius * (1 + (1000 - this.z) / 300);
+                this.y = canvas.height / 2 + Math.sin(this.angle) * this.radius * (1 + (1000 - this.z) / 300);
+                this.alpha = Math.min(0.5, (1000 - this.z) / 1500);
+                this.size = this.sizeBase * scale * 5;
+            }
+            draw() {
+                // Radial gradient for "wispy" soft edges
+                const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+                grd.addColorStop(0, `hsla(${this.hue}, 100%, 70%, ${this.alpha})`);
+                grd.addColorStop(0.5, `hsla(${this.hue}, 100%, 50%, ${this.alpha * 0.3})`);
+                grd.addColorStop(1, `hsla(${this.hue}, 100%, 20%, 0)`);
+                
+                ctx.fillStyle = grd;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
             }
         }
 
-        function draw() {
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            particles.forEach(p => p.update());
+        function setup() {
+            for (let i = 0; i < particleCount; i++) particles.push(new Particle());
+        }
 
-            // Connect the dots
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    
-                    // Loosened logic: Dots connect more easily now
-                    if (dist < 140 && Math.abs(particles[i].z - particles[j].z) < 200) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = `rgba(180, 130, 255, ${particles[i].alpha * 0.4})`;
-                        ctx.lineWidth = 0.7;
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.stroke();
-                    }
-                }
-            }
+        function animate() {
+            // "Ghosting" effect - don't clear the screen fully to create trails
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Additive blending makes overlapping magic look brighter
+            ctx.globalCompositeOperation = 'lighter';
 
             particles.forEach(p => {
-                ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
-                ctx.fill();
+                p.update();
+                p.draw();
             });
 
-            requestAnimationFrame(draw);
+            requestAnimationFrame(animate);
         }
 
-        for (let i = 0; i < particleCount; i++) particles.push(new Particle());
-        draw();
+        setup();
+        animate();
     </script>
 </body>
 </html>
