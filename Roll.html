@@ -33,8 +33,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         
-        // Rolled back to version 1.1.3 which actually exists on the CDN!
-        import DiceBox from "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/dice-box.es.min.js";
+        // JSDelivr AND Version 1.1.3 - no unpkg in sight.
+        import DiceBox from "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.3/dist/dice-box.es.min.js";
 
         const statusEl = document.getElementById('status');
 
@@ -55,9 +55,9 @@
 
             const Box = new DiceBox({
                 container: "#dice-box",
-                // When using a CDN, we MUST explicitly define the origin and assetPath like this
-                origin: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/",
-                assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/assets/", 
+                // Forcing the physics engine to ONLY look at jsdelivr
+                origin: "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.3/dist/",
+                assetPath: "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.3/dist/assets/", 
                 theme: "default",
                 scale: 6
             });
