@@ -27,6 +27,14 @@
             height: 100vh; 
             z-index: 1; 
         }
+        /* Force the canvas DiceBox injects to actually fill the container */
+        #dice-box canvas {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
 
         .controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 15px; }
         .button-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
@@ -80,6 +88,12 @@
             const db = getDatabase(app);
             const rollsRef = ref(db, "shared_rolls");
 
+            // Set explicit pixel dimensions BEFORE DiceBox reads offsetWidth/offsetHeight
+            // CSS vw/vh can still be unresolved when the worker initialises
+            const diceContainer = document.getElementById('dice-box');
+            diceContainer.style.width = window.innerWidth + 'px';
+            diceContainer.style.height = window.innerHeight + 'px';
+
             const Box = new DiceBox({
                 container: "#dice-box",
                 assetPath: "/Dragonshard/assets/dice-box/assets/",
@@ -96,11 +110,8 @@
 
             await Box.init();
 
-            // Defer resize until after the browser has painted the full layout,
-            // so the physics world boundaries match the true canvas dimensions.
-            requestAnimationFrame(() => {
-                window.dispatchEvent(new Event('resize'));
-            });
+            // updateConfig re-sends dimensions to the physics worker after the canvas exists
+            Box.updateConfig({ width: window.innerWidth, height: window.innerHeight });
             
             statusEl.innerText = "Arena Ready";
             setReady(true);
