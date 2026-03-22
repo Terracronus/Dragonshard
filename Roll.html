@@ -4,59 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Shared Dice Arena</title>
-    
     <style>
-        body { 
-            margin: 0; background: #0a0002; color: white; font-family: 'serif'; 
-            overflow: hidden; height: 100vh; width: 100vw;
-            background-image: radial-gradient(circle, #1a0005 0%, #000000 100%);
-        }
-
-        #dice-box { 
-            width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;
-        }
-
-        .back-nav {
-            position: absolute; top: 20px; left: 20px; z-index: 100;
-            color: #ff3366; text-decoration: none; text-transform: uppercase; 
-            letter-spacing: 2px; font-size: 11px; border: 1px solid rgba(255, 51, 102, 0.3);
-            padding: 8px 15px; border-radius: 20px; background: rgba(10, 0, 2, 0.6);
-            backdrop-filter: blur(5px);
-        }
-
-        .controls { 
-            position: absolute; bottom: 40px; width: 100%; text-align: center; 
-            z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 15px;
-        }
-
+        body { margin: 0; background: #0a0002; color: white; font-family: 'serif'; overflow: hidden; height: 100vh; width: 100vw; background-image: radial-gradient(circle, #1a0005 0%, #000000 100%); }
+        #dice-box { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        .controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 15px; }
         .button-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-
-        .roll-btn {
-            background: rgba(40, 0, 10, 0.6); border: 1px solid #ff3366; color: #ffcccc;
-            padding: 12px 25px; text-transform: uppercase; letter-spacing: 2px;
-            cursor: pointer; border-radius: 4px; transition: all 0.4s ease; font-size: 12px;
-        }
+        .roll-btn { background: rgba(40, 0, 10, 0.6); border: 1px solid #ff3366; color: #ffcccc; padding: 12px 25px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; border-radius: 4px; transition: all 0.4s ease; font-size: 12px; }
         .roll-btn:hover { background: #ff3366; color: white; box-shadow: 0 0 20px #ff3366; }
-
-        #log {
-            position: absolute; top: 20px; right: 20px; text-align: right;
-            font-size: 12px; color: rgba(255, 255, 255, 0.5); z-index: 100;
-            pointer-events: none; max-height: 200px; overflow: hidden;
-        }
+        #log { position: absolute; top: 20px; right: 20px; text-align: right; font-size: 12px; color: rgba(255, 255, 255, 0.5); z-index: 100; pointer-events: none; }
     </style>
 </head>
 <body>
-
-    <a href="index.html" class="back-nav">← Exit Arena</a>
-    <div id="log"></div>
+    <div id="log">Status: Initializing...</div>
     <div id="dice-box"></div>
-
     <div class="controls">
         <div class="button-group">
             <button class="roll-btn" onclick="triggerRoll('1d20')">Roll D20</button>
-            <button class="roll-btn" onclick="triggerRoll('2d6')">Roll 2D6</button>
-            <button class="roll-btn" onclick="triggerRoll('1d100')">Roll D100</button>
-            <button class="roll-btn" onclick="clearDice()">Clear Table</button>
+            <button class="roll-btn" onclick="clearDice()">Clear</button>
         </div>
     </div>
 
@@ -75,60 +39,47 @@
         import DiceBox from 'dice-box';
         import { firebaseConfig } from './config.js';
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const rollsRef = ref(db, "shared_rolls");
+        console.log("System: Firebase and DiceBox loading...");
 
-        // Set Player Identity
-        let playerName = localStorage.getItem('dragonshard_name');
-        if (!playerName) {
-            playerName = prompt("Identify yourself, Traveler:") || "Anonymous";
-            localStorage.setItem('dragonshard_name', playerName);
+        try {
+            const app = initializeApp(firebaseConfig);
+            const db = getDatabase(app);
+            const rollsRef = ref(db, "shared_rolls");
+            document.getElementById('log').innerText = "Status: Connected to Dragonshard";
+
+            const Box = new DiceBox("#dice-box", {
+                assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/assets/",
+                theme: "rust", 
+                offscreen: true,
+                scale: 5
+            });
+
+            await Box.init();
+            console.log("System: DiceBox Ready");
+
+            onChildAdded(rollsRef, (snapshot) => {
+                const data = snapshot.val();
+                const now = Date.now();
+                if (data.timestamp && (now - data.timestamp) < 10000) {
+                    Box.roll(data.notation);
+                }
+            });
+
+            window.triggerRoll = (notation) => {
+                console.log("Action: Pushing roll to Firebase...");
+                push(rollsRef, {
+                    user: "Traveler",
+                    notation: notation,
+                    timestamp: serverTimestamp()
+                }).catch(e => console.error("Firebase Error:", e));
+            };
+
+            window.clearDice = () => Box.clear();
+
+        } catch (error) {
+            console.error("Critical Failure:", error);
+            document.getElementById('log').innerText = "Status: Critical Error (Check Console)";
         }
-
-        // Initialize 3D Dice
-        const Box = new DiceBox("#dice-box", {
-            assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/assets/",
-            theme: "rust", 
-            offscreen: true,
-            scale: 5
-        });
-
-        await Box.init();
-
-        // Listen for rolls from the database
-        onChildAdded(rollsRef, (snapshot) => {
-            const data = snapshot.val();
-            const now = Date.now();
-            
-            // Sync roll if it's new (last 10 seconds)
-            if (data.timestamp && (now - data.timestamp) < 10000) {
-                Box.roll(data.notation);
-                updateLog(`${data.user} rolled ${data.notation}`);
-            }
-        });
-
-        // GLOBAL FUNCTIONS (Attached to window so buttons can see them)
-        window.triggerRoll = (notation) => {
-            push(rollsRef, {
-                user: playerName,
-                notation: notation,
-                timestamp: serverTimestamp()
-            }).catch(err => console.error("Firebase Error:", err));
-        };
-
-        window.clearDice = () => Box.clear();
-
-        function updateLog(msg) {
-            const log = document.getElementById('log');
-            const entry = document.createElement('div');
-            entry.innerText = msg;
-            log.prepend(entry);
-        }
-
-        // Clear dice on screen tap
-        Box.onCanvasClick = () => window.clearDice();
     </script>
 </body>
 </html>
