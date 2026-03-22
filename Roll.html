@@ -30,13 +30,13 @@
     </div>
 
     <script type="module">
-        console.log("🚀 [1] Script started, bypassing unpkg...");
+        console.log("🚀 [1] Script started...");
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         
-        // Switched entirely to JSDelivr to bypass your browser's unpkg block
-        import DiceBox from "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.14/dist/dice-box.es.min.js";
+        // Fixed: Removed the ".min" so JSDelivr actually finds the file
+        import DiceBox from "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.14/dist/dice-box.es.js";
 
         console.log("📦 [2] Imports successful!");
         const statusEl = document.getElementById('status');
@@ -60,8 +60,8 @@
             console.log("🎲 [4] Configuring DiceBox...");
             const Box = new DiceBox({
                 container: "#dice-box",
-                // Using JSDelivr for the assets too!
-                assetPath: "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.14/dist/assets/", 
+                // Pointing to your absolute GitHub Pages folder so the Web Worker doesn't get blocked
+                assetPath: "https://terracronus.github.io/Dragonshard/assets/", 
                 theme: "default",
                 scale: 6
             });
