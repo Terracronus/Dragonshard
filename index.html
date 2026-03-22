@@ -9,16 +9,17 @@
         body, html { width: 100%; height: 100%; background-color: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; }
         canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
+        /* Updated Button for Red/Pink Aesthetic */
         .arcane-link {
             position: relative; z-index: 10; padding: 22px 45px;
-            font-family: 'serif'; font-size: 18px; color: rgba(255,255,255,0.7);
+            font-family: 'serif'; font-size: 18px; color: rgba(255,220,220,0.8);
             text-transform: uppercase; text-decoration: none; letter-spacing: 4px;
-            background: rgba(10, 0, 20, 0.5); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(140, 0, 255, 0.3); border-radius: 60px;
-            box-shadow: 0 0 20px rgba(140, 0, 255, 0.2); text-align: center;
-            transition: all 0.5s ease;
+            background: rgba(30, 0, 5, 0.6); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 50, 100, 0.3); border-radius: 60px;
+            box-shadow: 0 0 25px rgba(200, 0, 50, 0.2); text-align: center;
+            transition: all 0.8s ease;
         }
-        .arcane-link:hover { color: white; border-color: rgba(140, 0, 255, 0.8); box-shadow: 0 0 30px rgba(140, 0, 255, 0.5); }
+        .arcane-link:hover { color: white; border-color: rgba(255, 100, 150, 0.8); box-shadow: 0 0 40px rgba(255, 0, 80, 0.4); }
     </style>
 </head>
 <body>
@@ -31,7 +32,7 @@
         let particles = [];
         let glows = [];
         const particleCount = 200;
-        const glowCount = 4; // Fewer, dimmer background glows
+        const glowCount = 4;
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -47,10 +48,11 @@
                 this.y = Math.random() * canvas.height;
                 this.size = 300 + Math.random() * 400;
                 this.alpha = 0;
-                this.maxAlpha = 0.02 + Math.random() * 0.05; // Extremely dim
-                this.speed = 0.0003 + Math.random() * 0.0007; // Very slow pulse
+                this.maxAlpha = 0.03 + Math.random() * 0.06; 
+                this.speed = 0.0003 + Math.random() * 0.0006; 
                 this.state = 'rising'; 
-                this.hue = 260 + Math.random() * 40;
+                // Red to Pink Hue Range (340 to 360/10)
+                this.hue = (Math.random() > 0.5) ? 340 + Math.random() * 20 : Math.random() * 15;
             }
             update() {
                 if (this.state === 'rising') {
@@ -63,8 +65,8 @@
             }
             draw() {
                 const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
-                grd.addColorStop(0, `hsla(${this.hue}, 100%, 50%, ${this.alpha})`);
-                grd.addColorStop(1, `hsla(${this.hue}, 100%, 50%, 0)`);
+                grd.addColorStop(0, `hsla(${this.hue}, 100%, 40%, ${this.alpha})`);
+                grd.addColorStop(1, `hsla(${this.hue}, 100%, 40%, 0)`);
                 ctx.fillStyle = grd;
                 ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
             }
@@ -76,10 +78,10 @@
                 this.angle = Math.random() * Math.PI * 2;
                 this.radiusBase = 150 + Math.random() * 200;
                 this.z = isFirstLoad ? Math.random() * 1000 : 1000;
-                this.speed = 0.4 + Math.random() * 0.6; // Glacial movement
-                this.rotationSpeed = 0.001 + Math.random() * 0.002; // Barely swirling
+                this.speed = 0.4 + Math.random() * 0.6; 
+                this.rotationSpeed = 0.001 + Math.random() * 0.002; 
                 this.wobble = Math.random() * 20;
-                this.hue = 260 + Math.random() * 30;
+                this.hue = (Math.random() > 0.5) ? 345 + Math.random() * 15 : Math.random() * 10;
             }
             update() {
                 this.z -= this.speed;
@@ -89,10 +91,10 @@
                 const currentRadius = this.radiusBase + Math.sin(this.z * 0.01 + this.wobble) * 30;
                 this.x = canvas.width / 2 + Math.cos(this.angle) * currentRadius * (1 + (1000 - this.z) / 400);
                 this.y = canvas.height / 2 + Math.sin(this.angle) * currentRadius * (1 + (1000 - this.z) / 400);
-                this.alpha = Math.min(0.15, (1000 - this.z) / 2000); // Subdued brightness
+                this.alpha = Math.min(0.2, (1000 - this.z) / 2000); 
             }
             draw() {
-                ctx.fillStyle = `hsla(${this.hue}, 70%, 70%, ${this.alpha})`;
+                ctx.fillStyle = `hsla(${this.hue}, 90%, 65%, ${this.alpha})`;
                 ctx.beginPath(); ctx.arc(this.x, this.y, 1, 0, Math.PI * 2); ctx.fill();
             }
         }
@@ -104,7 +106,7 @@
 
         function animate() {
             ctx.globalCompositeOperation = 'source-over';
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.08)'; // Slightly faster clear to avoid clutter
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.globalCompositeOperation = 'lighter';
             glows.forEach(g => { g.update(); g.draw(); });
