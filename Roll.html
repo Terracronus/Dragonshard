@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shared Dice Arena</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "dice-box": "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/dice-box.es.js"
+        }
+      }
+    </script>
+    <style>
+        #dice-container { width: 100vw; height: 100vh; background: #0a0002; }
+        .ui { position: absolute; bottom: 20px; width: 100%; text-align: center; z-index: 10; }
+        button { padding: 15px 30px; background: #ff3366; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="dice-container"></div>
+    <div class="ui">
+        <button id="rollBtn">Roll 1d20</button>
+    </div>
+
+    <script type="module">
+        import DiceBox from 'dice-box';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // 2. Your Firebase Config (Get this from your Firebase Console)
+        const firebaseConfig = { /* PASTE YOUR CONFIG HERE */ };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const rollsRef = ref(db, "arena/rolls");
+
+        // 3. Setup 3D Dice Box
+        const Box = new DiceBox("#dice-container", {
+            assetPath: "https://unpkg.com/@3d-dice/dice-box@1.1.3/dist/assets/",
+            theme: "dark",
+            offscreen: true
+        });
+
+        await Box.init();
+
+        // 4. Listen for shared rolls
+        // When ANYONE pushes a roll, EVERYONE sees the animation
+        onChildAdded(rollsRef, (snapshot) => {
+            const data = snapshot.val();
+            // Optional: Skip if the roll is older than 1 minute
+            Box.roll(data.notation);
+        });
+
+        // 5. Trigger a roll
+        document.getElementById('rollBtn').onclick = () => {
+            push(rollsRef, {
+                user: "PlayerName", // You can pull this from your folder structure
+                notation: "1d20",
+                timestamp: serverTimestamp()
+            });
+        };
+    </script>
+</body>
+</html>
