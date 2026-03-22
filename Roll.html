@@ -11,6 +11,7 @@
         .button-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .roll-btn { background: rgba(40, 0, 10, 0.6); border: 1px solid #ff3366; color: #ffcccc; padding: 12px 25px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; border-radius: 4px; transition: all 0.4s ease; font-size: 12px; }
         .roll-btn:hover { background: #ff3366; color: white; box-shadow: 0 0 20px #ff3366; }
+        .roll-btn:disabled { opacity: 0.4; cursor: not-allowed; }
         #status { position: absolute; top: 20px; right: 20px; color: #ffcccc; font-size: 12px; z-index: 100; pointer-events: none; }
         .back-nav { position: absolute; top: 20px; left: 20px; z-index: 100; color: #ff3366; text-decoration: none; font-size: 11px; border: 1px solid rgba(255, 51, 102, 0.3); padding: 8px 15px; border-radius: 20px; background: rgba(10, 0, 2, 0.6); text-transform: uppercase; letter-spacing: 2px; }
     </style>
@@ -31,10 +32,14 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import DiceBox from "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.3/dist/dice-box.es.min.js";
 
         const statusEl = document.getElementById('status');
+        const buttons = document.querySelectorAll('.roll-btn');
+
+        const setReady = (ready) => buttons.forEach(b => b.disabled = !ready);
+        setReady(false);
 
         try {
             const firebaseConfig = {
@@ -44,48 +49,67 @@
                 storageBucket: "terracronus-dragonshard.firebasestorage.app",
                 messagingSenderId: "479723332460",
                 appId: "1:479723332460:web:2ea5b21c67ddc70b018949",
-                databaseURL: "https://terracronus-dragonshard-default-rtdb.europe-west1.firebasedatabase.app/" 
+                databaseURL: "https://terracronus-dragonshard-default-rtdb.europe-west1.firebasedatabase.app/"
             };
-            
+
             const app = initializeApp(firebaseConfig);
             const db = getDatabase(app);
             const rollsRef = ref(db, "shared_rolls");
 
-            // No "origin" property to cause the double-URL bug.
-            // Using your absolute GitHub folder to prevent 404s.
             const Box = new DiceBox({
                 container: "#dice-box",
-                assetPath: "https://terracronus.github.io/Dragonshard/assets/", 
+                assetPath: "https://terracronus.github.io/Dragonshard/assets/",
                 theme: "default",
                 scale: 6
             });
 
             await Box.init();
             statusEl.innerText = "Arena Ready";
+            setReady(true);
+
+            // Track the startup time so we ignore stale rolls already in the DB
+            const startupTime = Date.now();
 
             onChildAdded(rollsRef, (snapshot) => {
                 const data = snapshot.val();
-                const now = Date.now();
-                if (data.timestamp && (now - data.timestamp) < 10000) {
-                    Box.roll(data.notation);
+                if (!data) return;
+
+                // Use client-side timestamp — avoids the serverTimestamp() null race condition
+                const age = Date.now() - (data.timestamp || 0);
+
+                if (data.notation && age < 10000) {
+                    if (data.timestamp >= startupTime) {
+                        Box.roll(data.notation);
+                    }
                 }
             });
 
-            document.getElementById('btn-d20').addEventListener('click', () => {
-                push(rollsRef, { notation: '1d20', timestamp: serverTimestamp() });
-            });
+            const sendRoll = (notation) => {
+                // Use Date.now() — always immediately available, no null race
+                push(rollsRef, { notation, timestamp: Date.now() });
+            };
 
-            document.getElementById('btn-2d6').addEventListener('click', () => {
-                push(rollsRef, { notation: '2d6', timestamp: serverTimestamp() });
-            });
+            document.getElementById('btn-d20').addEventListener('click', () => sendRoll('1d20'));
+            document.getElementById('btn-2d6').addEventListener('click', () => sendRoll('2d6'));
 
+            // Clear is local-only; push a clear event so all clients clear
             document.getElementById('btn-clear').addEventListener('click', () => {
+                push(rollsRef, { notation: null, clear: true, timestamp: Date.now() });
                 Box.clear();
+            });
+
+            // Listen for clear events from other clients
+            onChildAdded(rollsRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data?.clear && data.timestamp >= startupTime) {
+                    Box.clear();
+                }
             });
 
         } catch (error) {
             console.error("Critical Engine Failure:", error);
-            statusEl.innerText = "Connection Failed";
+            statusEl.innerText = `Engine Failed: ${error.message}`;
+            setReady(false);
         }
     </script>
 </body>
