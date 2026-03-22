@@ -42,9 +42,6 @@
         const setReady = (ready) => buttons.forEach(b => b.disabled = !ready);
         setReady(false);
 
-        // Generate a random seed string so both clients roll the same result
-        const makeSeed = () => Math.random().toString(36).substring(2, 10);
-
         try {
             const firebaseConfig = {
                 apiKey: "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
@@ -66,7 +63,7 @@
                 theme: "default",
                 themeColor: "#ffffff",   // White dice body
                 labelColor: "#000000",   // Black numbers
-                scale: 14                // Much bigger
+                scale: 40                // Maximum chonk
             });
 
             await Box.init();
@@ -84,18 +81,13 @@
                 } else if (data.notation) {
                     const age = Date.now() - data.timestamp;
                     if (age < 10000) {
-                        // Pass the same seed to every client so all dice show identical results
-                        Box.roll(data.notation, { seed: data.seed });
+                        Box.roll(data.notation);
                     }
                 }
             });
 
             const sendRoll = (notation) => {
-                push(rollsRef, {
-                    notation,
-                    seed: makeSeed(),   // One seed generated once, shared with all clients
-                    timestamp: Date.now()
-                });
+                push(rollsRef, { notation, timestamp: Date.now() });
             };
 
             document.getElementById('btn-d20').addEventListener('click', () => sendRoll('1d20'));
