@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>The Shard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            width: 100%; 
+            height: 100%; 
+            background-color: #000; 
+            overflow: hidden; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        .arcane-link {
+            position: relative;
+            z-index: 10;
+            padding: 25px 50px;
+            font-family: 'serif';
+            font-size: 22px;
+            color: white;
+            text-transform: uppercase;
+            text-decoration: none;
+            letter-spacing: 4px;
+            background: rgba(75, 0, 130, 0.4); 
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 60px;
+            box-shadow: 0 0 30px rgba(140, 0, 255, 0.5);
+            animation: portal-pulse 3s infinite ease-in-out;
+            text-align: center;
+        }
+
+        @keyframes portal-pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(140, 0, 255, 0.3); border-color: rgba(255,255,255,0.2); }
+            50% { box-shadow: 0 0 50px rgba(212, 170, 255, 0.7); border-color: rgba(255,255,255,0.8); }
+        }
+    </style>
+</head>
+<body>
+
+<video id="bg-video" autoplay muted loop playsinline>
+    <source src="https://www.dropbox.com/scl/fi/cbikj6dbrq68mz321zy0k/Background.mp4?rlkey=uocy7epnradjlyinsqyz4nv4y&st=e3b5c9xq&RAW=1" type="video/mp4">
+</video>
+
+<a href="https://YOUR-SECRET-LINK.com" class="arcane-link">
+    Gaze Into the Shard
+</a>
+
+</body>
+</html>
