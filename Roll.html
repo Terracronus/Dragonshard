@@ -5,17 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Shared Dice Arena</title>
     <style>
-        body { margin: 0; background: #0a0002; color: white; font-family: 'serif'; overflow: hidden; height: 100vh; width: 100vw; background-image: radial-gradient(circle, #1a0005 0%, #000000 100%); }
+        body { 
+            margin: 0; background: #0a0002; color: white; font-family: 'serif'; 
+            overflow: hidden; height: 100vh; width: 100vw; 
+            background-image: radial-gradient(circle, #1a0005 0%, #000000 100%); 
+        }
         #dice-box { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
-        .controls { position: absolute; bottom: 40px; width: 100%; text-align: center; z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .controls { 
+            position: absolute; bottom: 40px; width: 100%; text-align: center; 
+            z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 15px; 
+        }
         .button-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        .roll-btn { background: rgba(40, 0, 10, 0.6); border: 1px solid #ff3366; color: #ffcccc; padding: 12px 25px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; border-radius: 4px; transition: all 0.4s ease; font-size: 12px; }
+        .roll-btn { 
+            background: rgba(40, 0, 10, 0.6); border: 1px solid #ff3366; color: #ffcccc; 
+            padding: 12px 25px; text-transform: uppercase; letter-spacing: 2px; 
+            cursor: pointer; border-radius: 4px; transition: all 0.4s ease; font-size: 12px; 
+        }
         .roll-btn:hover { background: #ff3366; color: white; box-shadow: 0 0 20px #ff3366; }
-        #status { position: absolute; top: 20px; right: 20px; color: #ffcccc; font-size: 12px; z-index: 100; pointer-events: none; }
+        #status { 
+            position: absolute; top: 20px; right: 20px; color: #ffcccc; 
+            font-size: 12px; z-index: 100; pointer-events: none; 
+        }
+        .back-nav {
+            position: absolute; top: 20px; left: 20px; z-index: 100; 
+            color: #ff3366; text-decoration: none; font-size: 11px; 
+            border: 1px solid rgba(255, 51, 102, 0.3); padding: 8px 15px; 
+            border-radius: 20px; background: rgba(10, 0, 2, 0.6); text-transform: uppercase; letter-spacing: 2px;
+        }
     </style>
 </head>
 <body>
-    <a href="index.html" style="position: absolute; top: 20px; left: 20px; z-index: 100; color: #ff3366; text-decoration: none; font-size: 11px; border: 1px solid rgba(255, 51, 102, 0.3); padding: 8px 15px; border-radius: 20px; background: rgba(10, 0, 2, 0.6);">← Exit Arena</a>
+    <a href="index.html" class="back-nav">← Exit Arena</a>
     
     <div id="status">Loading Engine...</div>
     <div id="dice-box"></div>
@@ -31,7 +51,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import DiceBox from "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.3/dist/dice-box.es.min.js";
+        
+        // Version 1.1.14 directly matching your downloaded files
+        import DiceBox from "https://cdn.jsdelivr.net/npm/@3d-dice/dice-box@1.1.14/dist/dice-box.es.min.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
@@ -46,13 +68,15 @@
         const statusEl = document.getElementById('status');
 
         try {
+            // 1. Boot up Firebase
             const app = initializeApp(firebaseConfig);
             const db = getDatabase(app);
             const rollsRef = ref(db, "shared_rolls");
 
+            // 2. Boot up the 3D Engine with the absolute GitHub Pages path
             const Box = new DiceBox({
                 container: "#dice-box",
-                assetPath: "./assets/", // <-- THIS WAS THE ENTIRE PROBLEM
+                assetPath: "https://terracronus.github.io/Dragonshard/assets/", 
                 theme: "default",
                 scale: 6
             });
@@ -60,14 +84,17 @@
             await Box.init();
             statusEl.innerText = "Arena Ready";
 
+            // 3. Listen for any rolls happening in the database
             onChildAdded(rollsRef, (snapshot) => {
                 const data = snapshot.val();
                 const now = Date.now();
+                // Only trigger if the roll was made in the last 10 seconds
                 if (data.timestamp && (now - data.timestamp) < 10000) {
                     Box.roll(data.notation);
                 }
             });
 
+            // 4. Hook up the buttons to send rolls to Firebase
             document.getElementById('btn-d20').addEventListener('click', () => {
                 push(rollsRef, { notation: '1d20', timestamp: serverTimestamp() });
             });
@@ -81,7 +108,7 @@
             });
 
         } catch (error) {
-            console.error(error);
+            console.error("Critical Engine Failure:", error);
             statusEl.innerText = "Connection Failed";
         }
     </script>
