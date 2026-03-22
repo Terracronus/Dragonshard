@@ -34,7 +34,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Imported from YOUR GitHub Pages — not CDN — so the worker can fetch its files
         import DiceBox from "https://terracronus.github.io/Dragonshard/assets/dice-box/dice-box.es.min.js";
 
         const statusEl = document.getElementById('status');
@@ -60,17 +59,17 @@
 
             const Box = new DiceBox({
                 container: "#dice-box",
-                // Points to the 'assets' subfolder inside dice-box — library appends ammo/ and themes/ from here
                 assetPath: "/Dragonshard/assets/dice-box/assets/",
                 theme: "default",
-                scale: 6
+                themeColor: "#ffffff",   // White dice body
+                labelColor: "#000000",   // Black numbers
+                scale: 9                 // Much bigger
             });
 
             await Box.init();
             statusEl.innerText = "Arena Ready";
             setReady(true);
 
-            // Record startup time so we ignore stale rolls already in the DB on page load
             const startupTime = Date.now();
 
             onChildAdded(rollsRef, (snapshot) => {
@@ -88,14 +87,12 @@
             });
 
             const sendRoll = (notation) => {
-                // Date.now() instead of serverTimestamp() to avoid the null race condition
                 push(rollsRef, { notation, timestamp: Date.now() });
             };
 
             document.getElementById('btn-d20').addEventListener('click', () => sendRoll('1d20'));
             document.getElementById('btn-2d6').addEventListener('click', () => sendRoll('2d6'));
 
-            // Clear is synced — all clients will clear when anyone presses it
             document.getElementById('btn-clear').addEventListener('click', () => {
                 push(rollsRef, { clear: true, timestamp: Date.now() });
             });
