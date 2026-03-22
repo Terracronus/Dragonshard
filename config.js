@@ -5,5 +5,7 @@ export const firebaseConfig = {
   projectId: "terracronus-dragonshard",
   storageBucket: "terracronus-dragonshard.firebasestorage.app",
   messagingSenderId: "479723332460",
-  appId: "1:479723332460:web:2ea5b21c67ddc70b018949"
+  appId: "1:479723332460:web:2ea5b21c67ddc70b018949",
+  // YOU NEED THIS LINE:
+  databaseURL: "https://terracronus-dragonshard-default-rtdb.firebaseio.com" 
 };
