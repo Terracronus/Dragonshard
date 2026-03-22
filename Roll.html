@@ -38,22 +38,16 @@
     </script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import DiceBox from 'dice-box';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import DiceBox from 'dice-box';
+    
+    // Import your config from the local file
+    import { firebaseConfig } from './config.js';
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
-            authDomain: "terracronus-dragonshard.firebaseapp.com",
-            projectId: "terracronus-dragonshard",
-            storageBucket: "terracronus-dragonshard.firebasestorage.app",
-            messagingSenderId: "479723332460",
-            appId: "1:479723332460:web:2ea5b21c67ddc70b018949",
-            // If your dice don't roll, add: databaseURL: "https://your-db-url.firebaseio.com"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+    // Initialize Firebase using the imported config
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
         const rollsRef = ref(db, "shared_rolls");
 
         const Box = new DiceBox("#dice-box", {
