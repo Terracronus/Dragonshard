@@ -16,18 +16,20 @@
             background-image: radial-gradient(circle, #1a0005 0%, #000000 100%); 
         }
         
-        /* Force the container to snap to the absolute edges of the screen */
+        /*
+         * The dice-box is a FIXED canonical size (360×640).
+         * JS applies a CSS scale() so it visually fills the screen on any device.
+         * DiceBox's physics engine only ever sees 360×640, so seeds are deterministic.
+         */
         #dice-box { 
             position: absolute; 
             top: 0; 
             left: 0; 
-            right: 0;
-            bottom: 0;
-            width: 100vw; 
-            height: 100vh; 
-            z-index: 1; 
+            width: 360px;   /* canonical physics width  */
+            height: 640px;  /* canonical physics height */
+            z-index: 1;
+            transform-origin: top left; /* JS sets the scale + offset */
         }
-        /* Force the canvas DiceBox injects to actually fill the container */
         #dice-box canvas {
             position: absolute !important;
             top: 0 !important;
@@ -65,8 +67,30 @@
 
         import DiceBox from "https://terracronus.github.io/Dragonshard/assets/dice-box/dice-box.es.min.js";
 
+        // ─── Canonical physics world ───────────────────────────────────────────────
+        // ALL devices use this fixed size so the physics simulation is identical
+        // for any given seed, regardless of the real screen dimensions.
+        const PHYSICS_W = 360;
+        const PHYSICS_H = 640;
+
+        // Scale the fixed-size container so it fills (covers) the actual screen.
+        // "cover" means we scale up to the larger ratio so no black bars appear.
+        const scaleX = window.innerWidth  / PHYSICS_W;
+        const scaleY = window.innerHeight / PHYSICS_H;
+        const coverScale = Math.max(scaleX, scaleY);
+
+        const diceContainer = document.getElementById('dice-box');
+        // Centre the upscaled canvas over the viewport
+        const offsetX = (window.innerWidth  - PHYSICS_W * coverScale) / 2;
+        const offsetY = (window.innerHeight - PHYSICS_H * coverScale) / 2;
+        diceContainer.style.transform       = `scale(${coverScale})`;
+        diceContainer.style.transformOrigin = 'top left';
+        diceContainer.style.left            = offsetX + 'px';
+        diceContainer.style.top             = offsetY + 'px';
+        // ──────────────────────────────────────────────────────────────────────────
+
         const statusEl = document.getElementById('status');
-        const buttons = document.querySelectorAll('.roll-btn');
+        const buttons  = document.querySelectorAll('.roll-btn');
 
         const setReady = (ready) => buttons.forEach(b => b.disabled = !ready);
         setReady(false);
@@ -85,26 +109,27 @@
             };
 
             const app = initializeApp(firebaseConfig);
-            const db = getDatabase(app);
+            const db  = getDatabase(app);
             const rollsRef = ref(db, "shared_rolls");
 
-            // Initialize DiceBox with FIXED logical dimensions for synced physics
             const Box = new DiceBox({
-                container: "#dice-box",
-                assetPath: "/Dragonshard/assets/dice-box/assets/",
-                theme: "default",
-                themeColor: "#ffffff",
-                labelColor: "#000000",
-                scale: 7,                
-                throwForce: 12,          
-                spinForce: 12,           
+                container:    "#dice-box",
+                assetPath:    "/Dragonshard/assets/dice-box/assets/",
+                theme:        "default",
+                themeColor:   "#ffffff",
+                labelColor:   "#000000",
+                scale:        7,
+                throwForce:   12,
+                spinForce:    12,
                 startingHeight: 15,
-                width: 1024,   // Fixed physics width
-                height: 1024   // Fixed physics height
+                // Pass the CANONICAL dimensions — not window.innerWidth/Height
+                width:  PHYSICS_W,
+                height: PHYSICS_H,
             });
 
             await Box.init();
-            
+            Box.updateConfig({ width: PHYSICS_W, height: PHYSICS_H });
+
             statusEl.innerText = "Arena Ready";
             setReady(true);
 
@@ -127,14 +152,13 @@
             const sendRoll = (notation) => {
                 push(rollsRef, {
                     notation,
-                    seed: makeSeed(),
+                    seed:      makeSeed(),
                     timestamp: Date.now()
                 });
             };
 
             document.getElementById('btn-d20').addEventListener('click', () => sendRoll('1d20'));
             document.getElementById('btn-2d6').addEventListener('click', () => sendRoll('2d6'));
-
             document.getElementById('btn-clear').addEventListener('click', () => {
                 push(rollsRef, { clear: true, timestamp: Date.now() });
             });
