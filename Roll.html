@@ -18,7 +18,6 @@
             background-image: radial-gradient(circle at center, #1a0005 0%, #000000 100%);
         }
 
-        /* Subtle grid atmosphere */
         body::before {
             content: '';
             position: fixed;
@@ -31,7 +30,7 @@
             z-index: 0;
         }
 
-        /* ── DICE ANIMATION ──────────────────────────────── */
+        /* ── ARENA ──────────────────────────────────────────── */
         #arena {
             position: fixed;
             inset: 0;
@@ -40,55 +39,76 @@
             z-index: 10;
         }
 
-        .die {
+        /* ────────────────────────────────────────────────────────────────────
+           TWO-LAYER DIE STRUCTURE
+           .die-mover   → translates across the screen (top-left to bottom-right)
+           .die-tumbler → spins freely in 3D, completely independent of position
+           ──────────────────────────────────────────────────────────────────── */
+
+        .die-mover {
             position: absolute;
+            top: -120px;
+            left: -120px;
             pointer-events: none;
-            will-change: transform, top, left, opacity;
+            animation: fly-across var(--dur, 4.2s) cubic-bezier(0.22, 0.48, 0.56, 0.94)
+                       var(--delay, 0s) both;
         }
 
-        /* ── D6 : CSS 3D cube, 3 visible faces ─────────────── */
-        .die-d6-wrap {
-            width: 80px;
-            height: 80px;
-            perspective: 260px;
-            perspective-origin: 60% 30%;
+        @keyframes fly-across {
+            0%   { transform: translate(0px, 0px)       scale(0.35); opacity: 0; }
+            5%   { opacity: 1; }
+            15%  { transform: translate(15vw, 10vh)     scale(1.05); opacity: 1; }
+            50%  { transform: translate(52vw, 48vh)     scale(1);    opacity: 1; }
+            82%  { transform: translate(92vw, 88vh)     scale(0.95); opacity: 0.7; }
+            100% { transform: translate(122vw, 122vh)   scale(0.8);  opacity: 0; }
         }
 
-        .die-d6 {
-            width: 80px;
-            height: 80px;
+        /* True 3D tumble — all three axes, fully independent of the translation */
+        .die-tumbler {
+            animation: tumble-3d var(--dur, 4.2s) linear var(--delay, 0s) both;
+        }
+
+        @keyframes tumble-3d {
+            0%   { transform: rotateX(0deg)              rotateY(0deg)              rotateZ(0deg); }
+            100% { transform: rotateX(var(--rx, 480deg)) rotateY(var(--ry, 360deg)) rotateZ(var(--rz, 270deg)); }
+        }
+
+        /* ── D6 : CSS 3D CUBE ───────────────────────────────── */
+        .d6-scene {
+            width: 72px;
+            height: 72px;
+            perspective: 240px;
+        }
+
+        .d6-cube {
+            width: 72px;
+            height: 72px;
             position: relative;
             transform-style: preserve-3d;
-            transform: rotateX(-22deg) rotateY(30deg);
         }
 
         .d6-face {
             position: absolute;
-            width: 80px;
-            height: 80px;
-            border-radius: 11px;
-            border: 1.5px solid rgba(0,0,0,0.18);
+            width: 72px;
+            height: 72px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(0,0,0,0.2);
             backface-visibility: hidden;
         }
 
-        /* Front */
-        .d6-face-front {
-            background: linear-gradient(140deg, #f9f9f9 0%, #d6d6d6 100%);
-            box-shadow: inset 2px 2px 5px rgba(255,255,255,0.85), inset -2px -2px 5px rgba(0,0,0,0.12);
-            transform: translateZ(40px);
-        }
-
-        /* Top */
-        .d6-face-top {
-            background: linear-gradient(160deg, #e4e4e4 0%, #c4c4c4 100%);
-            transform: rotateX(90deg) translateZ(40px);
-        }
-
-        /* Right */
-        .d6-face-right {
-            background: linear-gradient(160deg, #cbcbcb 0%, #a8a8a8 100%);
-            transform: rotateY(90deg) translateZ(40px);
-        }
+        .face-front  { background: linear-gradient(135deg, #f5f5f5, #d8d8d8);
+                       transform: translateZ(36px);
+                       box-shadow: inset 2px 2px 5px rgba(255,255,255,0.8), inset -2px -2px 4px rgba(0,0,0,0.1); }
+        .face-back   { background: linear-gradient(135deg, #c8c8c8, #aeaeae);
+                       transform: rotateY(180deg) translateZ(36px); }
+        .face-right  { background: linear-gradient(135deg, #d0d0d0, #b4b4b4);
+                       transform: rotateY(90deg)  translateZ(36px); }
+        .face-left   { background: linear-gradient(135deg, #cccccc, #b0b0b0);
+                       transform: rotateY(-90deg) translateZ(36px); }
+        .face-top    { background: linear-gradient(135deg, #e8e8e8, #c8c8c8);
+                       transform: rotateX(90deg)  translateZ(36px); }
+        .face-bottom { background: linear-gradient(135deg, #bebebe, #a8a8a8);
+                       transform: rotateX(-90deg) translateZ(36px); }
 
         .d6-pips {
             display: grid;
@@ -100,66 +120,43 @@
             grid-template-rows: 1fr 1fr 1fr;
             width: 100%;
             height: 100%;
-            padding: 11px;
+            padding: 10px;
         }
 
         .pip {
-            width: 13px;
-            height: 13px;
-            background: radial-gradient(circle at 35% 35%, #5a0018, #1a0005);
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle at 35% 30%, #5a0018, #150003);
             border-radius: 50%;
-            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5), 0 1px 2px rgba(255,255,255,0.08);
             align-self: center;
             justify-self: center;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
         }
 
-        /* ── D20 : multi-face SVG ────────────────────────── */
-        .die-d20 {
-            width: 96px;
-            height: 96px;
+        /* ── D20 : CLEAN SUBDIVIDED TRIANGLE ───────────────── */
+        .d20-scene {
+            width: 88px;
+            height: 88px;
+            perspective: 280px;
+        }
+
+        .d20-shape {
+            width: 88px;
+            height: 88px;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            filter: drop-shadow(0 5px 14px rgba(0,0,0,0.75)) drop-shadow(0 0 28px rgba(255,51,102,0.4));
         }
 
-        .die-d20 svg { width: 96px; height: 96px; overflow: visible; }
-
-        /* ── FLIGHT ANIMATION ────────────────────────────── */
-        /*  Die travels top-left → bottom-right with a slight outward arc.
-            Keyframes use translate+rotate so the 3D perspective stays correct. */
-        @keyframes tumble-across {
-            0%   {
-                transform: translate(-5px,-5px)  rotate(0deg)   scale(0.3);
-                opacity: 0;
-            }
-            4%   { opacity: 1; }
-            12%  {
-                transform: translate(12vw, 8vh)  rotate(85deg)  scale(1.05);
-            }
-            45%  {
-                transform: translate(48vw, 44vh) rotate(260deg) scale(1);
-                opacity: 1;
-            }
-            80%  {
-                transform: translate(88vw, 85vh) rotate(480deg) scale(0.92);
-                opacity: 0.6;
-            }
-            100% {
-                transform: translate(118vw, 118vh) rotate(var(--spin, 620deg)) scale(0.7);
-                opacity: 0;
-            }
+        .d20-shape svg {
+            width: 88px;
+            height: 88px;
+            filter: drop-shadow(0 5px 16px rgba(0,0,0,0.8))
+                    drop-shadow(0 0 24px rgba(255,51,102,0.35));
+            overflow: visible;
         }
 
-        .die {
-            top: -100px;
-            left: -100px;
-            animation: tumble-across var(--dur, 4.2s) cubic-bezier(0.18, 0.55, 0.58, 0.98)
-                       var(--delay, 0s) both;
-        }
-
-        /* ── RESULT DISPLAY ──────────────────────────────── */
+        /* ── UI CHROME ──────────────────────────────────────── */
         #result-display {
             position: fixed;
             top: 50%;
@@ -208,7 +205,6 @@
             min-height: 1.4em;
         }
 
-        /* ── UI CHROME ──────────────────────────────────── */
         .controls {
             position: fixed;
             bottom: 40px;
@@ -238,7 +234,7 @@
             backdrop-filter: blur(4px);
         }
 
-        .roll-btn:hover { background: #ff3366; color: #fff; box-shadow: 0 0 22px rgba(255,51,102,0.7); }
+        .roll-btn:hover  { background: #ff3366; color: #fff; box-shadow: 0 0 22px rgba(255,51,102,0.7); }
         .roll-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
         #status {
@@ -278,8 +274,8 @@
     <div id="arena"></div>
 
     <div id="result-display">
-        <div class="res-label"  id="res-label">—</div>
-        <div class="res-number" id="res-number">—</div>
+        <div class="res-label"     id="res-label">—</div>
+        <div class="res-number"    id="res-number">—</div>
         <div class="res-breakdown" id="res-breakdown"></div>
     </div>
 
@@ -296,36 +292,28 @@
         import { getDatabase, ref, push, onChildAdded }
                                   from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // ─────────────────────────────────────────────────────────────────────
-        // SEEDED RNG  –  mulberry32
-        //   • Pure maths, zero physics, identical result on every device
-        //   • The seed is shared via Firebase so everyone sees the same number
-        // ─────────────────────────────────────────────────────────────────────
+        // ─── SEEDED RNG (mulberry32) ──────────────────────────────────────────
+        // Actual results come from pure maths — identical on every device.
+        // The visual dice are purely cosmetic eye candy with no numbers on them.
         function mulberry32(a) {
             return () => {
-                a |= 0;
-                a  = (a + 0x6D2B79F5) | 0;
+                a |= 0; a = (a + 0x6D2B79F5) | 0;
                 let t = Math.imul(a ^ (a >>> 15), 1 | a);
                 t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
                 return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
             };
         }
-
         function hashSeed(str) {
             let h = 5381;
-            for (let i = 0; i < str.length; i++)
-                h = (((h << 5) + h) + str.charCodeAt(i)) | 0;
+            for (let i = 0; i < str.length; i++) h = (((h << 5) + h) + str.charCodeAt(i)) | 0;
             return h >>> 0;
         }
-
         function rollDice(sides, count, seed) {
             const rng = mulberry32(hashSeed(seed));
             return Array.from({ length: count }, () => Math.floor(rng() * sides) + 1);
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // DICE BUILDERS
-        // ─────────────────────────────────────────────────────────────────────
+        // ─── D6 BUILDER ──────────────────────────────────────────────────────
         const PIP_MAP = {
             1: ['c'],
             2: ['tl','br'],
@@ -335,151 +323,161 @@
             6: ['tl','tr','ml','mr','bl','br'],
         };
 
-        function buildD6(value) {
-            // Outer .die wrapper (handles flight anim)
-            const die = document.createElement('div');
-            die.className = 'die';
-
-            // 3D perspective wrapper
-            const wrap = document.createElement('div');
-            wrap.className = 'die-d6-wrap';
-
-            const cube = document.createElement('div');
-            cube.className = 'die-d6';
-
-            // Front face — shows the pip value
-            const front = document.createElement('div');
-            front.className = 'd6-face d6-face-front';
-            const grid = document.createElement('div');
-            grid.className = 'd6-pips';
-            const lit = new Set(PIP_MAP[value] ?? []);
-            ['tl','tr','ml','c','mr','bl','br'].forEach(area => {
-                const cell = document.createElement('div');
-                cell.style.cssText = `grid-area:${area};display:flex;align-items:center;justify-content:center;`;
-                if (lit.has(area)) {
-                    const pip = document.createElement('div');
-                    pip.className = 'pip';
-                    cell.appendChild(pip);
-                }
-                grid.appendChild(cell);
-            });
-            front.appendChild(grid);
-
-            // Top face (just shaded, no pips needed)
-            const top = document.createElement('div');
-            top.className = 'd6-face d6-face-top';
-
-            // Right face
-            const right = document.createElement('div');
-            right.className = 'd6-face d6-face-right';
-
-            cube.appendChild(front);
-            cube.appendChild(top);
-            cube.appendChild(right);
-            wrap.appendChild(cube);
-            die.appendChild(wrap);
-            return die;
+        function makePipFace(faceClass, pipValue) {
+            const face = document.createElement('div');
+            face.className = `d6-face ${faceClass}`;
+            if (pipValue != null) {
+                const grid = document.createElement('div');
+                grid.className = 'd6-pips';
+                const lit = new Set(PIP_MAP[pipValue]);
+                ['tl','tr','ml','c','mr','bl','br'].forEach(area => {
+                    const cell = document.createElement('div');
+                    cell.style.cssText = `grid-area:${area};display:flex;align-items:center;justify-content:center;`;
+                    if (lit.has(area)) {
+                        const pip = document.createElement('div');
+                        pip.className = 'pip';
+                        cell.appendChild(pip);
+                    }
+                    grid.appendChild(cell);
+                });
+                face.appendChild(grid);
+            }
+            return face;
         }
 
-        function buildD20(value) {
-            // Outer .die wrapper (handles flight anim)
-            const die = document.createElement('div');
-            die.className = 'die';
+        function buildD6() {
+            // Cosmetic pip values are random and completely independent of the real result
+            const rnd = () => Math.floor(Math.random() * 6) + 1;
 
-            const wrap = document.createElement('div');
-            wrap.className = 'die-d20';
+            const mover = document.createElement('div');
+            mover.className = 'die-mover';
+            const tumbler = document.createElement('div');
+            tumbler.className = 'die-tumbler';
+            const scene = document.createElement('div');
+            scene.className = 'd6-scene';
+            const cube = document.createElement('div');
+            cube.className = 'd6-cube';
 
-            // Multi-face SVG — front face (bright) + 3 adjacent (shaded) + 3 outer (dark)
-            // ViewBox 0 0 100 100
-            // Front (up-pointing triangle): A(50,16) B(14,79) C(86,79)  centroid≈(50,58)
-            // Left adj: A,B, D(2,47)
-            // Right adj: A,C, E(98,47)
-            // Bottom adj: B,C, F(50,99)
-            // Top-left outer: A,D, G(28,4)
-            // Top-right outer: A,E, H(72,4)
-            // Bottom-left outer: B,D, I(2,84)   Bottom-right outer: C,E, J(98,84)
-            wrap.innerHTML = `
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            // All six faces — three with pips, three plain shaded
+            cube.appendChild(makePipFace('face-front',  rnd()));
+            cube.appendChild(makePipFace('face-back',   rnd()));
+            cube.appendChild(makePipFace('face-top',    rnd()));
+            cube.appendChild(makePipFace('face-bottom', null));
+            cube.appendChild(makePipFace('face-left',   null));
+            cube.appendChild(makePipFace('face-right',  null));
+
+            scene.appendChild(cube);
+            tumbler.appendChild(scene);
+            mover.appendChild(tumbler);
+            return mover;
+        }
+
+        // ─── D20 BUILDER ─────────────────────────────────────────────────────
+        // Classic D20 face: equilateral triangle subdivided into 4 smaller
+        // triangles by connecting edge midpoints. No number — purely cosmetic.
+        function buildD20() {
+            const mover = document.createElement('div');
+            mover.className = 'die-mover';
+            const tumbler = document.createElement('div');
+            tumbler.className = 'die-tumbler';
+            const scene = document.createElement('div');
+            scene.className = 'd20-scene';
+            const shape = document.createElement('div');
+            shape.className = 'd20-shape';
+
+            // Outer triangle:  T(50,5)  BL(7,87)  BR(93,87)
+            // Edge midpoints:  TL(28,46)  TR(72,46)  Bot(50,87)
+            // Four inner faces, each subtly different shade:
+            //   top-face    T, TL, TR
+            //   left-face   BL, TL, Bot
+            //   right-face  BR, TR, Bot
+            //   center-face (inverted)  TL, TR, Bot
+            shape.innerHTML = `
+            <svg viewBox="0 0 100 94" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <linearGradient id="gFront_${value}" x1="30%" y1="0%" x2="70%" y2="100%">
-                  <stop offset="0%" stop-color="#f4f4f4"/>
+                <linearGradient id="gT" x1="50%" y1="0%" x2="50%" y2="100%">
+                  <stop offset="0%" stop-color="#f2f2f2"/>
+                  <stop offset="100%" stop-color="#d6d6d6"/>
+                </linearGradient>
+                <linearGradient id="gL" x1="0%" y1="50%" x2="100%" y2="50%">
+                  <stop offset="0%" stop-color="#b8b8b8"/>
                   <stop offset="100%" stop-color="#d0d0d0"/>
                 </linearGradient>
+                <linearGradient id="gR" x1="100%" y1="50%" x2="0%" y2="50%">
+                  <stop offset="0%" stop-color="#b0b0b0"/>
+                  <stop offset="100%" stop-color="#c8c8c8"/>
+                </linearGradient>
+                <linearGradient id="gC" x1="50%" y1="0%" x2="50%" y2="100%">
+                  <stop offset="0%" stop-color="#d4d4d4"/>
+                  <stop offset="100%" stop-color="#bcbcbc"/>
+                </linearGradient>
               </defs>
-              <!-- outermost / darkest faces first -->
-              <polygon points="50,16 2,47 28,4"   fill="#787878" stroke="#555" stroke-width="0.8" stroke-linejoin="round"/>
-              <polygon points="50,16 98,47 72,4"  fill="#848484" stroke="#555" stroke-width="0.8" stroke-linejoin="round"/>
-              <polygon points="14,79 2,47 2,84"   fill="#6e6e6e" stroke="#555" stroke-width="0.8" stroke-linejoin="round"/>
-              <polygon points="86,79 98,47 98,84" fill="#787878" stroke="#555" stroke-width="0.8" stroke-linejoin="round"/>
-              <polygon points="14,79 86,79 50,99" fill="#888888" stroke="#555" stroke-width="0.8" stroke-linejoin="round"/>
-              <!-- adjacent faces (medium) -->
-              <polygon points="50,16 14,79 2,47"  fill="#a8a8a8" stroke="#777" stroke-width="0.9" stroke-linejoin="round"/>
-              <polygon points="50,16 86,79 98,47" fill="#b8b8b8" stroke="#777" stroke-width="0.9" stroke-linejoin="round"/>
-              <polygon points="14,79 86,79 50,99" fill="#a0a0a0" stroke="#777" stroke-width="0.9" stroke-linejoin="round"/>
-              <!-- front face — brightest -->
-              <polygon points="50,16 14,79 86,79" fill="url(#gFront_${value})" stroke="#999" stroke-width="1.2" stroke-linejoin="round"/>
-              <!-- inner guide line — subtle inner triangle for the "d20 look" -->
-              <polygon points="50,28 24,74 76,74" fill="none" stroke="rgba(26,0,5,0.10)" stroke-width="1"/>
-              <!-- value, centred on front face centroid (50, 58) -->
-              <text x="50" y="65"
-                    text-anchor="middle"
-                    font-family="Cinzel, Georgia, serif"
-                    font-weight="700"
-                    font-size="${value >= 10 ? 19 : 22}"
-                    fill="#1a0005"
-                    letter-spacing="0">${value}</text>
+              <polygon points="50,5  28,46 72,46" fill="url(#gT)" stroke="#929292" stroke-width="1.2" stroke-linejoin="round"/>
+              <polygon points="7,87  28,46 50,87" fill="url(#gL)" stroke="#929292" stroke-width="1.2" stroke-linejoin="round"/>
+              <polygon points="93,87 72,46 50,87" fill="url(#gR)" stroke="#929292" stroke-width="1.2" stroke-linejoin="round"/>
+              <polygon points="28,46 72,46 50,87" fill="url(#gC)" stroke="#aaaaaa" stroke-width="1.2" stroke-linejoin="round"/>
+              <polygon points="50,5 7,87 93,87"   fill="none"     stroke="#888888" stroke-width="1.8" stroke-linejoin="round"/>
             </svg>`;
 
-            die.appendChild(wrap);
-            return die;
+            scene.appendChild(shape);
+            tumbler.appendChild(scene);
+            mover.appendChild(tumbler);
+            return mover;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // LAUNCH ANIMATION  –  all dice fly top-left → bottom-right
-        // ─────────────────────────────────────────────────────────────────────
+        // ─── LAUNCH ──────────────────────────────────────────────────────────
         let clearTimer = null;
 
         function launchDice(type, values) {
             const arena = document.getElementById('arena');
 
-            values.forEach((val, i) => {
-                const el = type === 'd20' ? buildD20(val) : buildD6(val);
+            values.forEach((_, i) => {
+                const el = type === 'd20' ? buildD20() : buildD6();
 
-                // Stagger multi-dice slightly so they don't stack perfectly
-                const lateralShift = (i - (values.length - 1) / 2) * 60;
-                el.style.top  = `${-110 + lateralShift}px`;
-                el.style.left = `${-110 - i * 18}px`;
-                el.style.setProperty('--delay', `${i * 0.22}s`);
-                el.style.setProperty('--dur',   `${4.2 + i * 0.15}s`);
-                el.style.setProperty('--spin',  `${560 + i * 110}deg`);
+                const spread = (i - (values.length - 1) / 2) * 70;
+                el.style.top  = `${-120 + spread}px`;
+                el.style.left = `${-120 - i * 22}px`;
+
+                const dur = 4.4 + i * 0.2;
+                el.style.setProperty('--delay', `${i * 0.25}s`);
+                el.style.setProperty('--dur',   `${dur}s`);
+
+                // Each die gets a unique random 3D rotation — unrelated to the result
+                el.style.setProperty('--rx', `${400 + Math.random() * 280}deg`);
+                el.style.setProperty('--ry', `${280 + Math.random() * 320}deg`);
+                el.style.setProperty('--rz', `${160 + Math.random() * 280}deg`);
 
                 arena.appendChild(el);
-                el.addEventListener('animationend', () => el.remove(), { once: true });
+
+                // Two animations fire on two child elements (mover + tumbler).
+                // Wait for both to finish before removing.
+                let endCount = 0;
+                const onEnd = () => { if (++endCount >= 2) el.remove(); };
+                el.addEventListener('animationend', onEnd);
+                el.firstChild.addEventListener('animationend', onEnd);
             });
 
             // ── result overlay ──
             const total     = values.reduce((a, b) => a + b, 0);
-            const labelText = type === 'd20' ? 'D20' : '2D6';
+            const label     = type === 'd20' ? 'D20' : '2D6';
             const breakdown = values.length > 1
                 ? values.join(' + ') + `  =  ${total}`
                 : '';
 
-            const display   = document.getElementById('result-display');
-            const numEl     = document.getElementById('res-number');
+            const display = document.getElementById('result-display');
+            const numEl   = document.getElementById('res-number');
 
-            document.getElementById('res-label').textContent     = labelText;
+            document.getElementById('res-label').textContent     = label;
             document.getElementById('res-breakdown').textContent = breakdown;
 
-            // Re-trigger pop animation
             numEl.classList.remove('pop');
             numEl.textContent = total;
-            void numEl.offsetWidth; // force reflow
+            void numEl.offsetWidth;
             numEl.classList.add('pop');
 
             display.classList.add('visible');
-
             if (clearTimer) clearTimeout(clearTimer);
-            clearTimer = setTimeout(() => display.classList.remove('visible'), 4500);
+            clearTimer = setTimeout(() => display.classList.remove('visible'), 5000);
         }
 
         function clearArena() {
@@ -488,12 +486,10 @@
             if (clearTimer) clearTimeout(clearTimer);
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // FIREBASE
-        // ─────────────────────────────────────────────────────────────────────
+        // ─── FIREBASE ────────────────────────────────────────────────────────
         const statusEl = document.getElementById('status');
         const buttons  = document.querySelectorAll('.roll-btn');
-        const setReady = (r) => buttons.forEach(b => b.disabled = !r);
+        const setReady = r => buttons.forEach(b => b.disabled = !r);
         setReady(false);
 
         try {
@@ -516,7 +512,7 @@
 
             const startupTime = Date.now();
 
-            onChildAdded(rollsRef, (snapshot) => {
+            onChildAdded(rollsRef, snapshot => {
                 const data = snapshot.val();
                 if (!data || data.timestamp < startupTime) return;
 
@@ -532,7 +528,7 @@
             });
 
             const makeSeed = () => Math.random().toString(36).substring(2, 10);
-            const sendRoll = (type) => push(rollsRef, { type, seed: makeSeed(), timestamp: Date.now() });
+            const sendRoll = type => push(rollsRef, { type, seed: makeSeed(), timestamp: Date.now() });
 
             document.getElementById('btn-d20').addEventListener('click',  () => sendRoll('d20'));
             document.getElementById('btn-2d6').addEventListener('click',  () => sendRoll('2d6'));
