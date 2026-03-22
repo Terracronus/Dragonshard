@@ -13,12 +13,10 @@
             position: relative; z-index: 10; padding: 22px 45px;
             font-family: 'serif'; font-size: 18px; color: white;
             text-transform: uppercase; text-decoration: none; letter-spacing: 4px;
-            background: rgba(20, 0, 40, 0.4); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(140, 0, 255, 0.5); border-radius: 60px;
-            box-shadow: 0 0 25px rgba(140, 0, 255, 0.4); animation: pulse 4s infinite ease-in-out;
-            text-shadow: 0 0 10px rgba(255,255,255,0.6);
+            background: rgba(10, 0, 20, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(140, 0, 255, 0.6); border-radius: 60px;
+            box-shadow: 0 0 20px rgba(140, 0, 255, 0.4); text-align: center;
         }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 50px rgba(180, 100, 255, 0.7); } }
     </style>
 </head>
 <body>
@@ -29,7 +27,7 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
-        const particleCount = 150; // Tripled for high density
+        const particleCount = 250; // High count for "thread" look
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -44,37 +42,32 @@
             }
             init(isFirstLoad = false) {
                 this.angle = Math.random() * Math.PI * 2;
-                // Randomized radius to fill the "tunnel walls" more thickly
-                this.radius = 80 + Math.random() * 220; 
+                this.radiusBase = 120 + Math.random() * 150;
                 this.z = isFirstLoad ? Math.random() * 1000 : 1000;
-                this.speed = 1.5 + Math.random() * 2.5; 
-                this.rotationSpeed = 0.003 + Math.random() * 0.008;
-                this.hue = 250 + Math.random() * 50; 
-                // Increased base size for "thicker" wisps
-                this.sizeBase = 15 + Math.random() * 25; 
+                this.speed = 2 + Math.random() * 2;
+                this.rotationSpeed = 0.005 + Math.random() * 0.01;
+                // Add a "wobble" frequency to make it look like smoke
+                this.wobble = Math.random() * 10; 
+                this.hue = 260 + Math.random() * 30;
             }
             update() {
                 this.z -= this.speed;
                 this.angle += this.rotationSpeed;
                 if (this.z < 1) this.init();
 
-                const scale = 500 / (500 + this.z);
-                this.x = canvas.width / 2 + Math.cos(this.angle) * this.radius * (1 + (1000 - this.z) / 250);
-                this.y = canvas.height / 2 + Math.sin(this.angle) * this.radius * (1 + (1000 - this.z) / 250);
+                const scale = 400 / (400 + this.z);
+                // The Wobble: adding a Sine wave to the radius makes it "wispy"
+                const currentRadius = this.radiusBase + Math.sin(this.z * 0.02 + this.wobble) * 40;
                 
-                // Increased opacity for more presence
-                this.alpha = Math.min(0.6, (1000 - this.z) / 1200);
-                this.size = this.sizeBase * scale * 6;
+                this.x = canvas.width / 2 + Math.cos(this.angle) * currentRadius * (1 + (1000 - this.z) / 400);
+                this.y = canvas.height / 2 + Math.sin(this.angle) * currentRadius * (1 + (1000 - this.z) / 400);
+                this.alpha = Math.min(0.4, (1000 - this.z) / 1000);
             }
             draw() {
-                const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
-                grd.addColorStop(0, `hsla(${this.hue}, 100%, 75%, ${this.alpha})`);
-                grd.addColorStop(0.4, `hsla(${this.hue}, 100%, 50%, ${this.alpha * 0.4})`);
-                grd.addColorStop(1, `hsla(${this.hue}, 100%, 20%, 0)`);
-                
-                ctx.fillStyle = grd;
+                // Tiny points, not big gradients
+                ctx.fillStyle = `hsla(${this.hue}, 80%, 70%, ${this.alpha})`;
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.arc(this.x, this.y, 1.2, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
@@ -84,9 +77,9 @@
         }
 
         function animate() {
-            // Slower ghosting (0.1 instead of 0.15) makes trails stay much longer
+            // Keep the trails LONG (0.05 instead of 0.1) to create silk threads
             ctx.globalCompositeOperation = 'source-over';
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.globalCompositeOperation = 'lighter';
