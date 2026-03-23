@@ -356,11 +356,13 @@
                 return ((t ^ t >>> 14) >>> 0) / 4294967296;
             };
         }
+        
         function shuffle(arr, rng) {
             const a=[...arr];
             for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
             return a;
         }
+        
         function getRound(seed, round) {
             const rng = rng32(((seed*997)+(round*101))>>>0);
             const sym = shuffle([0,1,2,3,4,5,6,7], rng);
@@ -379,6 +381,37 @@
             return {tgt,desc,layouts};
         }
 
+        function getTourney(GS) {
+            const seed = GS.gameSeed;
+            const po = shuffle([...GAME_PLAYERS], rng32((seed*503)>>>0));
+            const t = GS.tourney || {};
+            let m0 = [], m1 = [];
+            let matchId = '';
+            let opp = '';
+            
+            if (GS.round === 0) {
+                m0 = [po[0], po[1]];
+                m1 = [po[2], po[3]];
+            } else {
+                m0 = [t.w0, t.w1];
+                m1 = [t.l0, t.l1];
+            }
+            
+            if (m0.includes(PLAYER_NAME)) { matchId = 'm0'; opp = m0.find(p => p !== PLAYER_NAME); }
+            if (m1.includes(PLAYER_NAME)) { matchId = 'm1'; opp = m1.find(p => p !== PLAYER_NAME); }
+            
+            return { m0, m1, matchId, opp, po };
+        }
+        
+        function getDuelSyms(seed, round, player, score) {
+            const hash = player.split('').reduce((a,b)=>a+b.charCodeAt(0),0);
+            const rng = rng32(((seed*13) + (round*97) + (score*31) + hash) >>> 0);
+            const all = shuffle([0,1,2,3,4,5,6,7], rng);
+            const tgt = all[0];
+            const opts = shuffle([all[0], all[1], all[2], all[3]], rng);
+            return { tgt, opts };
+        }
+
         /* ──────────────────────── TIMING */
         const CD_MS  = 3000;  // countdown
 
@@ -394,11 +427,14 @@
             if(changed && GS.phase !== 'round_active') clearRT();
             prevPhase = GS.phase;
 
-            // Auto-advance P2 if everyone voted
-            if (IS_DM && GS.phase === 'round_active' && GS.puzzle === 2) {
-                const votes = GS.votes || {};
-                if (Object.keys(votes).length === GAME_PLAYERS.length) {
-                    endRound();
+            // Auto-advance P2 or P3 if everyone finished
+            if (IS_DM && GS.phase === 'round_active') {
+                if (GS.puzzle === 2) {
+                    const votes = GS.votes || {};
+                    if (Object.keys(votes).length === GAME_PLAYERS.length) endRound();
+                } else if (GS.puzzle === 3) {
+                    const wins = GS.p3Winners || {};
+                    if (Object.keys(wins).length === 2) endRound();
                 }
             }
 
@@ -413,6 +449,7 @@
         window.tapRdy = tapRdy;
         window.castVote = castVote;
         window.castVoteP2 = castVoteP2;
+        window.castVoteP3 = castVoteP3;
         window.advance = advance;
         window.reset = reset;
 
@@ -444,9 +481,9 @@
                       <div class="pz-name">Silent Sync</div>
                       <div class="pz-desc">Strike as one without speaking</div>
                     </button>
-                    <button class="pz-card locked" disabled>
-                      <div class="pz-name">Trial III</div>
-                      <div class="pz-desc">Coming soon</div>
+                    <button class="pz-card" onclick="selPuzzle(3)">
+                      <div class="pz-name">Arcane Duel</div>
+                      <div class="pz-desc">A fast-paced 1v1 tournament</div>
                     </button>
                   </div>
                 </div>`;
@@ -479,9 +516,13 @@
                 <span class="rstatus">${rdy[p]?'✓ Ready':'···'}</span>
               </div>`).join('');
 
-            const title = s.puzzle === 1 ? 'Symbol Cipher' : 'Silent Sync';
-            const subDM = s.puzzle === 1 ? 'Awaiting adventurers' : 'Awaiting the synched';
-            const subPl = s.puzzle === 1 ? 'A trial of communication awaits' : 'A trial of perfect timing';
+            const titles = { 1: 'Symbol Cipher', 2: 'Silent Sync', 3: 'Arcane Duel' };
+            const subsDM = { 1: 'Awaiting adventurers', 2: 'Awaiting the synched', 3: 'Awaiting the combatants' };
+            const subsPl = { 1: 'A trial of communication awaits', 2: 'A trial of perfect timing', 3: 'A trial of speed and precision' };
+            
+            const title = titles[s.puzzle];
+            const subDM = subsDM[s.puzzle];
+            const subPl = subsPl[s.puzzle];
 
             if(IS_DM) {
                 gc.innerHTML=`
@@ -546,12 +587,12 @@
             const myVote = votes[PLAYER_NAME];
             const elapsed= Date.now()-s.phaseStart;
 
-            const TOTAL_RNDS = s.puzzle === 1 ? 4 : 3;
-            const RND_MS_CUR = s.puzzle === 1 ? 5000 : 10000;
+            const TOTAL_RNDS = s.puzzle === 1 ? 4 : (s.puzzle === 2 ? 3 : 2);
+            const RND_MS_CUR = s.puzzle === 1 ? 5000 : (s.puzzle === 2 ? 10000 : 60000);
             const tl = Math.max(0, RND_MS_CUR - elapsed);
 
             if (s.puzzle === 1) {
-                const {tgt,desc,layouts} = getRound(s.gameSeed,round);
+                const {tgt,desc,layouts} = getRound(s.gameSeed, round);
                 const amDesc = (PLAYER_NAME===desc);
 
                 if(IS_DM) {
@@ -651,6 +692,83 @@
                       </div>
                     </div>`;
                 }
+            } else if (s.puzzle === 3) {
+                const { m0, m1, matchId, opp } = getTourney(s);
+                const scores = s.p3Scores || {};
+                const s0a = scores[m0[0]]||0, s0b = scores[m0[1]]||0;
+                const s1a = scores[m1[0]]||0, s1b = scores[m1[1]]||0;
+                
+                if (IS_DM) {
+                    gc.innerHTML=`
+                    <div class="dm-box">
+                      <p class="rnd-bar">${round===0 ? 'Semifinals' : 'Finals'}</p>
+                      <div class="dm-sec" id="ds">${Math.ceil(tl/1000)}</div>
+                      
+                      <div style="width:100%; margin-top:10px;">
+                         <p style="font-size:12px; color:var(--ac); text-transform:uppercase; margin-bottom:4px;">${round===0?'Match 1':'Gold Match'}</p>
+                         <div style="display:flex; justify-content:space-between; font-size:11px;">
+                            <span style="color:${s.p3Winners?.m0 === m0[0] ? '#44ff78' : ''}">${m0[0]}: ${s0a}/5</span>
+                            <span style="color:${s.p3Winners?.m0 === m0[1] ? '#44ff78' : ''}">${m0[1]}: ${s0b}/5</span>
+                         </div>
+                         <div style="height:6px; border-radius:3px; background:rgba(255,255,255,0.1); margin:4px 0 16px; display:flex; overflow:hidden;">
+                            <div style="width:${(s0a/5)*50}%; background:var(--ac); transition:0.2s;"></div>
+                            <div style="flex-grow:1;"></div>
+                            <div style="width:${(s0b/5)*50}%; background:#ff4455; transition:0.2s;"></div>
+                         </div>
+
+                         <p style="font-size:12px; color:var(--ac); text-transform:uppercase; margin-bottom:4px;">${round===0?'Match 2':'Bronze Match'}</p>
+                         <div style="display:flex; justify-content:space-between; font-size:11px;">
+                            <span style="color:${s.p3Winners?.m1 === m1[0] ? '#44ff78' : ''}">${m1[0]}: ${s1a}/5</span>
+                            <span style="color:${s.p3Winners?.m1 === m1[1] ? '#44ff78' : ''}">${m1[1]}: ${s1b}/5</span>
+                         </div>
+                         <div style="height:6px; border-radius:3px; background:rgba(255,255,255,0.1); margin:4px 0 16px; display:flex; overflow:hidden;">
+                            <div style="width:${(s1a/5)*50}%; background:var(--ac); transition:0.2s;"></div>
+                            <div style="flex-grow:1;"></div>
+                            <div style="width:${(s1b/5)*50}%; background:#ff4455; transition:0.2s;"></div>
+                         </div>
+                      </div>
+                    </div>`;
+                } else {
+                    const amDone = s.p3Winners?.[matchId] !== undefined;
+                    const iWon = s.p3Winners?.[matchId] === PLAYER_NAME;
+                    
+                    if (amDone) {
+                        gc.innerHTML=`
+                        <div style="text-align:center;">
+                          <div class="w-glyph">◈</div>
+                          <p class="ph-title" style="color:${iWon?'#44ff78':'#ff4455'}; text-shadow:0 0 18px ${iWon?'rgba(68,255,120,0.4)':'rgba(255,68,85,0.4)'}">${iWon ? 'Victory!' : 'Defeated'}</p>
+                          <p class="w-text">Waiting for the other duel to finish...</p>
+                        </div>`;
+                    } else {
+                        const myScore = scores[PLAYER_NAME] || 0;
+                        const oppScore = scores[opp] || 0;
+                        const { tgt, opts } = getDuelSyms(s.gameSeed, round, PLAYER_NAME, myScore);
+                        
+                        gc.innerHTML=`
+                        <div style="text-align:center;max-width:290px; width:100%">
+                          <p class="rnd-bar">${round===0 ? 'Semifinals' : (matchId==='m0' ? 'Gold Match' : 'Bronze Match')}</p>
+                          <div style="display:flex; justify-content:space-between; margin-bottom:16px; font-size:14px; color:var(--ac); text-transform:uppercase; letter-spacing:2px;">
+                             <span>You: ${myScore}/5</span>
+                             <span>${opp}: ${oppScore}/5</span>
+                          </div>
+                          <div class="sym-lg" style="width:110px; height:110px; margin: 0 auto 20px; color:#fff; filter:drop-shadow(0 0 10px rgba(255,255,255,0.3));">
+                             <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${S[tgt].svg}</svg>
+                          </div>
+                          <div class="sym-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 24px;">
+                            ${opts.map(sid=>`
+                              <button class="sym-btn" onclick="castVoteP3(${sid})">
+                                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${S[sid].svg}</svg>
+                              </button>`).join('')}
+                          </div>
+                          <div class="timer-wrap">
+                            <div class="timer-track">
+                              <div class="timer-fill ${tl<10000?'urgent':''}" id="tb" style="width:${(tl/RND_MS_CUR)*100}%"></div>
+                            </div>
+                            <div class="timer-sec" id="ts">${Math.ceil(tl/1000)}</div>
+                          </div>
+                        </div>`;
+                    }
+                }
             }
 
             if(changed || rndTimer===null) {
@@ -682,12 +800,33 @@
             await update(VREF,{[PLAYER_NAME]: serverTimestamp()});
         }
 
+        let isClickingP3 = false;
+        async function castVoteP3(sid) {
+            if(!GS || GS.phase !== 'round_active' || isClickingP3) return;
+            const { matchId } = getTourney(GS);
+            if(GS.p3Winners && GS.p3Winners[matchId]) return;
+            
+            isClickingP3 = true;
+            const scores = GS.p3Scores || {};
+            let myScore = scores[PLAYER_NAME] || 0;
+            const { tgt } = getDuelSyms(GS.gameSeed, GS.round||0, PLAYER_NAME, myScore);
+            
+            if (sid === tgt) myScore++;
+            else myScore = Math.max(0, myScore - 1);
+            
+            const updates = { [`p3Scores/${PLAYER_NAME}`]: myScore };
+            if (myScore >= 5) updates[`p3Winners/${matchId}`] = PLAYER_NAME;
+            
+            await update(GREF, updates);
+            setTimeout(() => { isClickingP3 = false; }, 150);
+        }
+
         function endRound() {
             if(GS?.phase!=='round_active') return;
             const round=GS.round||0;
 
             if (GS.puzzle === 1) {
-                const {tgt,desc}=getRound(GS.gameSeed,round);
+                const {tgt,desc}=getRound(GS.gameSeed, round);
                 const votes=GS.votes||{};
                 const guessers=GAME_PLAYERS.filter(p=>p!==desc);
                 const correct=guessers.filter(p=>votes[p]===tgt).length;
@@ -711,6 +850,19 @@
                 }
                 const newScore = (GS.teamScore || 0) + score;
                 update(GREF, { phase: 'round_reveal', phaseStart: Date.now(), teamScore: newScore, lastDiff: diff });
+            } else if (GS.puzzle === 3) {
+                const t = getTourney(GS);
+                const scores = GS.p3Scores || {};
+                const winners = GS.p3Winners || {};
+                ['m0', 'm1'].forEach(mid => {
+                    if (!winners[mid]) {
+                        const m = mid === 'm0' ? t.m0 : t.m1;
+                        const s0 = scores[m[0]] || 0;
+                        const s1 = scores[m[1]] || 0;
+                        winners[mid] = s0 >= s1 ? m[0] : m[1]; 
+                    }
+                });
+                update(GREF, { phase: 'round_reveal', phaseStart: Date.now(), p3Winners: winners });
             }
         }
 
@@ -719,7 +871,7 @@
             const round=s.round||0;
 
             if (s.puzzle === 1) {
-                const {tgt,desc}=getRound(s.gameSeed,round);
+                const {tgt,desc}=getRound(s.gameSeed, round);
                 const votes=s.votes||{};
                 const guessers=GAME_PLAYERS.filter(p=>p!==desc);
                 const correct=guessers.filter(p=>votes[p]===tgt).length;
@@ -778,16 +930,75 @@
                     :`<p class="w-text" style="font-size:11px;letter-spacing:2px">Waiting for DM&hellip;</p>`
                   }
                 </div>`;
+            } else if (s.puzzle === 3) {
+                const { m0, m1 } = getTourney(s);
+                const scores = s.p3Scores || {};
+                const win0 = s.p3Winners?.m0;
+                const win1 = s.p3Winners?.m1;
+                const last = round >= 1;
+
+                const rowHTML = (p) => {
+                    const isWin = (p === win0 || p === win1);
+                    return `<div class="rv-row ${isWin ? 'ok' : 'bad'}">
+                        <span>${p}</span>
+                        <span>${scores[p]||0} points ${isWin ? '(Win)' : ''}</span>
+                    </div>`;
+                };
+
+                gc.innerHTML=`
+                <div style="text-align:center;max-width:290px; width:100%;">
+                  <p class="rnd-bar">${round===0 ? 'Semifinals Complete' : 'Tournament Concluded'}</p>
+                  <p class="ph-title" style="margin-bottom:16px;">Results</p>
+                  
+                  <div class="rv-rows" style="margin-bottom:10px;">
+                     ${rowHTML(m0[0])}
+                     ${rowHTML(m0[1])}
+                  </div>
+                  <div class="rv-rows" style="margin-bottom:20px;">
+                     ${rowHTML(m1[0])}
+                     ${rowHTML(m1[1])}
+                  </div>
+                  
+                  ${IS_DM
+                    ?`<button class="btn-action" onclick="advance()">${last?'Final Standings &rarr;':'Next Round &rarr;'}</button>`
+                    :`<p class="w-text" style="font-size:11px;letter-spacing:2px">Waiting for DM&hellip;</p>`
+                  }
+                </div>`;
             }
         }
 
         async function advance() {
             const round=GS?.round||0;
-            const maxRounds = GS?.puzzle === 1 ? 3 : 2; // zero-indexed
+            const maxRounds = GS?.puzzle === 1 ? 3 : (GS?.puzzle === 2 ? 2 : 1); 
             if(round >= maxRounds) {
-                await update(GREF,{phase:'game_over',phaseStart:Date.now()});
+                if (GS?.puzzle === 3 && round === 1) {
+                    const t = getTourney(GS);
+                    const first = GS.p3Winners?.m0;
+                    const second = t.m0[0] === first ? t.m0[1] : t.m0[0];
+                    const third = GS.p3Winners?.m1;
+                    const fourth = t.m1[0] === third ? t.m1[1] : t.m1[0];
+                    await update(GREF, {
+                        phase: 'game_over', phaseStart: Date.now(),
+                        tourney: { ...GS.tourney, first, second, third, fourth }
+                    });
+                } else {
+                    await update(GREF,{phase:'game_over',phaseStart:Date.now()});
+                }
             } else {
-                await update(GREF,{phase:'countdown',round:round+1,phaseStart:Date.now(),votes:null});
+                if (GS?.puzzle === 3 && round === 0) {
+                    const t = getTourney(GS);
+                    const w0 = GS.p3Winners?.m0;
+                    const l0 = t.m0[0] === w0 ? t.m0[1] : t.m0[0];
+                    const w1 = GS.p3Winners?.m1;
+                    const l1 = t.m1[0] === w1 ? t.m1[1] : t.m1[0];
+                    await update(GREF, {
+                        phase: 'countdown', round: 1, phaseStart: Date.now(),
+                        p3Scores: null, p3Winners: null,
+                        tourney: { w0, l0, w1, l1 }
+                    });
+                } else {
+                    await update(GREF,{phase:'countdown',round:round+1,phaseStart:Date.now(),votes:null});
+                }
             }
         }
 
@@ -825,6 +1036,30 @@
                   <div class="go-score">${score}<span class="go-max" style="font-size:22px"> / 300</span></div>
                   <p class="go-title">${title}</p>
                   <p class="go-sub">${sub}</p>
+                  ${IS_DM?`<button class=\"btn-action\" onclick=\"reset()\">Play Again</button>`:''}
+                </div>`;
+            } else if (s.puzzle === 3) {
+                const t = s.tourney || {};
+                gc.innerHTML=`
+                <div style="text-align:center;max-width:280px; width:100%">
+                  <p class="go-head">Arcane Duel Complete</p>
+                  
+                  <div style="display:flex; flex-direction:column; gap:8px; margin: 24px 0;">
+                     <div class="rv-row ok" style="font-size:14px; padding:14px;">
+                         <span style="color:#ffc832;">👑 1st Place</span>
+                         <span style="font-weight:bold;">${t.first}</span>
+                     </div>
+                     <div class="rv-row" style="font-size:13px; background:rgba(255,255,255,0.08);">
+                         <span>2nd Place</span><span>${t.second}</span>
+                     </div>
+                     <div class="rv-row" style="font-size:12px; background:rgba(255,255,255,0.04);">
+                         <span>3rd Place</span><span>${t.third}</span>
+                     </div>
+                     <div class="rv-row bad" style="font-size:11px;">
+                         <span>4th Place</span><span>${t.fourth}</span>
+                     </div>
+                  </div>
+                  
                   ${IS_DM?`<button class=\"btn-action\" onclick=\"reset()\">Play Again</button>`:''}
                 </div>`;
             }
