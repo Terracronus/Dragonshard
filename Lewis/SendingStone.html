@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sending Stone</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --ac: #f59e0b; /* Arcane accent color */
+        }
+        body {
+            background: #050010;
+            background-image: radial-gradient(circle, #130025 0%, #000008 100%);
+            color: white;
+            font-family: serif;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .back-nav {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            z-index: 100;
+            color: var(--ac);
+            text-decoration: none;
+            font-size: 11px;
+            border: 1px solid rgba(245,158,11,0.35);
+            padding: 7px 14px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        #container {
+            margin-top: 60px;
+            width: 95%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 80px);
+        }
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 5px;
+            background: rgba(255,255,255,0.1);
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 80px;
+        }
+        .tab.active {
+            background: var(--ac);
+            color: black;
+            font-weight: bold;
+        }
+        .chat-area {
+            flex: 1;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .message {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 15px;
+            border-left: 3px solid var(--ac);
+        }
+        .message .sender {
+            font-size: 11px;
+            color: var(--ac);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .message .text {
+            color: rgba(255,255,255,0.9);
+            line-height: 1.4;
+        }
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(245,158,11,0.5);
+            color: white;
+            border-radius: 5px;
+            font-family: serif;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            background: var(--ac);
+            border: none;
+            color: black;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <a href="Hub.html" class="back-nav">← Hub</a>
+    
+    <div id="container">
+        <div class="tabs" id="tabs"></div>
+        <div class="chat-area" id="chat"></div>
+        
+        <div class="input-area" id="input-area">
+            <input type="text" id="dm-sender" placeholder="Name of NPC/Sender..." style="display:none;" />
+            <input type="text" id="dm-recipient" placeholder="Who are you writing to?" style="display:none;" />
+            
+            <div class="input-row">
+                <input type="text" id="msg-text" placeholder="Whisper into the stone..." autocomplete="off" />
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, get, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        /* ──────────────────────── CONFIGURATION ──────────────────────── */
+        // CHANGE THESE TWO VARIABLES BASED ON THE FOLDER YOU ARE PUTTING THIS IN
+        const PLAYER_NAME = 'Lewis'; // 'James', 'Lewis', 'Paige', 'Peter', or 'Carlo'
+        const IS_DM = false;         // false for players, true for 'Carlo'
+        /* ─────────────────────────────────────────────────────────────── */
+
+        const CHAR_NAMES = {
+            James: 'Larris',
+            Lewis: 'Glacivox',
+            Paige: 'Aphelia',
+            Peter: 'Alaric'
+        };
+
+        const GAME_PLAYERS = ['James', 'Lewis', 'Paige', 'Peter'];
+        const DM_NAME = 'Carlo';
+
+        const FB = {
+            apiKey: "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
+            authDomain: "terracronus-dragonshard.firebaseapp.com",
+            projectId: "terracronus-dragonshard",
+            storageBucket: "terracronus-dragonshard.firebasestorage.app",
+            messagingSenderId: "479723332460",
+            appId: "1:479723332460:web:2ea5b21c67ddc70b018949",
+            databaseURL: "https://terracronus-dragonshard-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+
+        const app = initializeApp(FB);
+        const db = getDatabase(app);
+        
+        let currentTab = null;
+        let unsubscribe = null;
+
+        const tabsContainer = document.getElementById('tabs');
+        const dmSenderInput = document.getElementById('dm-sender');
+        const dmRecipientInput = document.getElementById('dm-recipient');
+        const inputArea = document.getElementById('input-area');
+
+        // Setup the specific subpages/tabs based on who is logged in
+        const targets = IS_DM ? [...GAME_PLAYERS, 'All Outgoing'] : [...GAME_PLAYERS.filter(p => p !== PLAYER_NAME), DM_NAME];
+
+        targets.forEach(target => {
+            const tab = document.createElement('div');
+            tab.className = 'tab';
+            tab.textContent = target === DM_NAME ? 'Dungeon Master' : target;
+            tab.onclick = () => selectTab(target);
+            tabsContainer.appendChild(tab);
+        });
+
+        // Initialize the first tab
+        selectTab(targets[0]);
+
+        // Helper to consistently identify a conversation node
+        function getConvoId(p1, p2) {
+            return [p1, p2].sort().join('_');
+        }
+
+        function selectTab(target) {
+            currentTab = target;
+            
+            // Highlight the active tab
+            Array.from(tabsContainer.children).forEach(t => {
+                t.classList.toggle('active', t.textContent === (target === DM_NAME ? 'Dungeon Master' : target));
+            });
+
+            // "All Outgoing" tab logic for the DM
+            if (target === 'All Outgoing') {
+                inputArea.style.display = 'none';
+                loadAllOutgoing();
+                return;
+            } else {
+                inputArea.style.display = 'flex';
+            }
+
+            // Input fields logic
+            if (IS_DM) {
+                dmSenderInput.style.display = 'block';
+                dmRecipientInput.style.display = 'none';
+            } else {
+                dmSenderInput.style.display = 'none';
+                // If a player is talking to the DM, force them to say who it is intended for
+                dmRecipientInput.style.display = target === DM_NAME ? 'block' : 'none';
+            }
+
+            if (unsubscribe) unsubscribe();
+
+            const convoId = getConvoId(PLAYER_NAME, target);
+            const messagesRef = ref(db, `sending_stone/${convoId}`);
+            
+            unsubscribe = onValue(messagesRef, (snapshot) => {
+                const data = snapshot.val() || {};
+                renderMessages(Object.values(data));
+            });
+        }
+
+        function renderMessages(messages) {
+            const chatArea = document.getElementById('chat');
+            chatArea.innerHTML = '';
+            
+            // Sort chronologically and restrict to the last 3 messages for the specific view
+            messages.sort((a, b) => a.timestamp - b.timestamp);
+            const recent = messages.slice(-3);
+
+            if (recent.length === 0) {
+                chatArea.innerHTML = '<div style="opacity:0.4; text-align:center; font-style: italic; margin-top: 20px;">The stone is silent...</div>';
+            }
+
+            recent.forEach(msg => {
+                const el = document.createElement('div');
+                el.className = 'message';
+                
+                // Show real player name in brackets to the DM if it's an NPC/custom name
+                const realSenderText = (IS_DM && msg.realSender !== msg.senderName) ? ` [${msg.realSender}]` : '';
+                
+                el.innerHTML = `
+                    <div class="sender">${msg.senderName}${realSenderText}</div>
+                    <div class="text">${msg.text}</div>
+                `;
+                chatArea.appendChild(el);
+            });
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function loadAllOutgoing() {
+            if (unsubscribe) unsubscribe();
+            const rootRef = ref(db, `sending_stone`);
+            
+            unsubscribe = onValue(rootRef, (snapshot) => {
+                const allData = snapshot.val() || {};
+                const chatArea = document.getElementById('chat');
+                chatArea.innerHTML = '';
+                
+                let allOutgoing = [];
+                Object.values(allData).forEach(convo => {
+                    Object.values(convo).forEach(msg => {
+                        // Gather any message sent by a player
+                        if (GAME_PLAYERS.includes(msg.realSender)) {
+                            allOutgoing.push(msg);
+                        }
+                    });
+                });
+
+                allOutgoing.sort((a, b) => a.timestamp - b.timestamp);
+
+                if (allOutgoing.length === 0) {
+                    chatArea.innerHTML = '<div style="opacity:0.4; text-align:center; font-style: italic; margin-top: 20px;">No outgoing messages...</div>';
+                }
+
+                allOutgoing.forEach(msg => {
+                    const el = document.createElement('div');
+                    el.className = 'message';
+                    el.innerHTML = `
+                        <div class="sender">${msg.senderName} (${msg.realSender}) ➔ ${msg.target}</div>
+                        <div class="text">${msg.text}</div>
+                    `;
+                    chatArea.appendChild(el);
+                });
+                chatArea.scrollTop = chatArea.scrollHeight;
+            });
+        }
+
+        document.getElementById('send-btn').addEventListener('click', async () => {
+            const textInput = document.getElementById('msg-text');
+            let text = textInput.value.trim();
+            if (!text) return;
+
+            let senderName = CHAR_NAMES[PLAYER_NAME] || PLAYER_NAME;
+            
+            // DM Custom Naming requirement
+            if (IS_DM) {
+                const dmSender = dmSenderInput.value.trim();
+                if (!dmSender) {
+                    alert("Please specify who the message is from!");
+                    return;
+                }
+                senderName = dmSender;
+            }
+
+            // Player to DM recipient requirement
+            if (!IS_DM && currentTab === DM_NAME) {
+                const intended = dmRecipientInput.value.trim();
+                if (!intended) {
+                    alert("Please specify who you are writing to!");
+                    return;
+                }
+                text = `[Intended for: ${intended}] ${text}`;
+            }
+
+            const convoId = getConvoId(PLAYER_NAME, currentTab);
+            const messagesRef = ref(db, `sending_stone/${convoId}`);
+            
+            const msg = {
+                realSender: PLAYER_NAME,
+                senderName: senderName,
+                target: currentTab,
+                text: text,
+                timestamp: Date.now()
+            };
+
+            textInput.value = '';
+            if (!IS_DM && currentTab === DM_NAME) {
+                dmRecipientInput.value = ''; 
+            }
+
+            // Ensure only 3 messages are kept in the conversation log memory
+            const snap = await get(messagesRef);
+            const data = snap.val() || {};
+            const keys = Object.keys(data).sort((a, b) => data[a].timestamp - data[b].timestamp);
+            
+            if (keys.length >= 3) {
+                const toDelete = keys.length - 2;
+                for (let i = 0; i < toDelete; i++) {
+                    await remove(ref(db, `sending_stone/${convoId}/${keys[i]}`));
+                }
+            }
+
+            await push(messagesRef, msg);
+        });
+        
+        // Allow enter key sending
+        document.getElementById('msg-text').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('send-btn').click();
+            }
+        });
+    </script>
+</body>
+</html>
