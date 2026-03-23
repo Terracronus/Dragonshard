@@ -6,43 +6,36 @@
     <title>Dice Arena – Lewis</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; }
-
         body {
             margin: 0;
-            background: #0a0002;
+            background: #181818;
             color: white;
             font-family: 'serif';
             overflow: hidden;
             height: 100vh;
             width: 100vw;
-            background-image: radial-gradient(circle, #1a0005 0%, #000000 100%);
+            background-image: radial-gradient(circle, #262626 0%, #111111 100%);
         }
-
         #dice-box {
-            position: absolute;
-            top: 0; left: 0;
+            position: absolute; top: 0; left: 0;
             z-index: 1;
         }
         #dice-box canvas {
-            position: absolute !important;
-            top: 0 !important; left: 0 !important;
+            position: absolute !important; top: 0 !important; left: 0 !important;
             width: 100% !important; height: 100% !important;
         }
-
         #engine-status {
             position: absolute; top: 16px; right: 16px;
-            color: #ffcccc; font-size: 11px; z-index: 100;
+            color: rgba(130,175,255,0.7); font-size: 11px; z-index: 100;
             pointer-events: none; letter-spacing: 1px;
         }
-
         .back-nav {
             position: absolute; top: 14px; left: 14px; z-index: 100;
-            color: #ff3366; text-decoration: none; font-size: 11px;
-            border: 1px solid rgba(255, 51, 102, 0.3); padding: 7px 14px;
-            border-radius: 20px; background: rgba(10, 0, 2, 0.7);
+            color: #3b82f6; text-decoration: none; font-size: 11px;
+            border: 1px solid rgba(59,130,246,0.35); padding: 7px 14px;
+            border-radius: 20px; background: rgba(10,10,10,0.7);
             text-transform: uppercase; letter-spacing: 2px;
         }
-
         #roll-log {
             position: absolute;
             top: 60px; left: 50%; transform: translateX(-50%);
@@ -51,116 +44,83 @@
             width: calc(100% - 32px); max-width: 420px;
         }
         .roll-note {
-            width: 100%;
-            background: rgba(10, 0, 2, 0.9);
+            width: 100%; background: rgba(15,15,15,0.92);
             padding: 9px 16px; border-radius: 6px;
             font-size: 13px; letter-spacing: 0.5px; text-align: center;
             animation: slideIn 0.2s ease;
         }
         .roll-note.rolling { border: 1px solid #ff9933; color: #ffcc99; }
         .roll-note.complete { border: 1px solid #44ffaa; color: #aaffdd; }
-        .roll-note.mine     { border-color: #ff3366; color: #ffcccc; }
+        .roll-note.mine     { border-color: #3b82f6; color: rgba(210,228,255,0.85); }
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(-5px); }
             to   { opacity: 1; transform: translateY(0); }
         }
-
         #bottom-panel {
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            z-index: 100;
-            padding: 0 12px 28px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            position: absolute; bottom: 0; left: 0; right: 0;
+            z-index: 100; padding: 0 12px 28px;
+            display: flex; flex-direction: column; gap: 10px;
         }
         #bottom-panel::before {
-            content: '';
-            position: absolute;
-            top: -32px; left: 0; right: 0;
-            height: 32px;
-            background: linear-gradient(to bottom, transparent, rgba(10,0,2,0.55));
+            content: ''; position: absolute;
+            top: -32px; left: 0; right: 0; height: 32px;
+            background: linear-gradient(to bottom, transparent, rgba(15,15,15,0.6));
             pointer-events: none;
         }
-
         #history-wrap details {
-            background: rgba(10, 0, 2, 0.88);
-            border: 1px solid rgba(255, 51, 102, 0.3);
-            border-radius: 8px;
-            overflow: hidden;
+            background: rgba(15,15,15,0.9);
+            border: 1px solid rgba(59,130,246,0.3);
+            border-radius: 8px; overflow: hidden;
         }
         #history-wrap summary {
-            padding: 8px 14px;
-            font-size: 11px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #ff3366;
-            cursor: pointer;
-            user-select: none;
-            list-style: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            padding: 8px 14px; font-size: 11px; letter-spacing: 2px;
+            text-transform: uppercase; color: #3b82f6;
+            cursor: pointer; user-select: none; list-style: none;
+            display: flex; align-items: center; gap: 8px;
         }
         #history-wrap summary::-webkit-details-marker { display: none; }
         #history-wrap summary::before {
-            content: '▶';
-            font-size: 8px;
-            transition: transform 0.2s;
-            color: rgba(255,51,102,0.5);
+            content: '▶'; font-size: 8px; transition: transform 0.2s;
+            color: rgba(59,130,246,0.5);
         }
         #history-wrap details[open] summary::before { transform: rotate(90deg); }
         #history-list {
-            padding: 0 10px 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            max-height: 180px;
-            overflow-y: auto;
+            padding: 0 10px 10px; display: flex; flex-direction: column;
+            gap: 4px; max-height: 180px; overflow-y: auto;
         }
         #history-list::-webkit-scrollbar { width: 3px; }
-        #history-list::-webkit-scrollbar-thumb { background: rgba(255,51,102,0.3); border-radius: 2px; }
+        #history-list::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.3); border-radius: 2px; }
         .hist-entry {
-            font-size: 11px;
-            color: #ffcccc;
-            padding: 5px 8px;
-            border-left: 2px solid rgba(255,51,102,0.25);
-            letter-spacing: 0.3px;
-            line-height: 1.6;
+            font-size: 11px; color: rgba(210,228,255,0.85); padding: 5px 8px;
+            border-left: 2px solid rgba(59,130,246,0.25);
+            letter-spacing: 0.3px; line-height: 1.6;
         }
-        .hist-who  { color: #ff9999; font-size: 10px; }
+        .hist-who  { color: rgba(130,175,255,0.7); font-size: 10px; }
         .hist-roll { color: #ffffff; }
-        .hist-time { color: rgba(255,204,204,0.35); font-size: 10px; margin-left: 4px; }
-
+        .hist-time { color: rgba(59,130,246,0.4); font-size: 10px; margin-left: 4px; }
         #dice-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
         }
         .roll-btn {
-            background: rgba(40, 0, 10, 0.75);
-            border: 1px solid #ff3366;
-            color: #ffcccc;
-            padding: 14px 4px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            cursor: pointer;
-            border-radius: 5px;
+            background: rgba(20,20,20,0.85);
+            border: 1px solid #3b82f6;
+            color: rgba(210,228,255,0.85);
+            padding: 14px 4px; text-transform: uppercase; letter-spacing: 1.5px;
+            cursor: pointer; border-radius: 5px;
             transition: background 0.25s, box-shadow 0.25s;
-            font-size: 13px;
-            font-family: serif;
-            width: 100%;
+            font-size: 13px; font-family: serif; width: 100%;
             -webkit-tap-highlight-color: transparent;
         }
-        .roll-btn:active { background: #ff3366; color: white; box-shadow: 0 0 16px #ff3366; }
+        .roll-btn:active {
+            background: #3b82f6; color: white;
+            box-shadow: 0 0 16px rgba(59,130,246,0.8);
+        }
         .roll-btn:disabled { opacity: 0.35; cursor: not-allowed; }
         #btn-d100  { grid-column: span 2; }
         #btn-clear {
             grid-column: span 2;
-            border-color: rgba(255, 51, 102, 0.35);
-            font-size: 11px;
-            color: rgba(255,204,204,0.6);
-            padding: 10px 4px;
+            border-color: rgba(59,130,246,0.3);
+            font-size: 11px; color: rgba(130,175,255,0.7); padding: 10px 4px;
         }
     </style>
 </head>
@@ -169,28 +129,26 @@
     <div id="engine-status">Loading Engine...</div>
     <div id="dice-box"></div>
     <div id="roll-log"></div>
-
     <div id="bottom-panel">
         <div id="history-wrap">
             <details>
                 <summary>Roll History</summary>
                 <div id="history-list">
-                    <em style="color:rgba(255,204,204,0.3);font-size:11px;padding:4px 8px;display:block">No rolls yet</em>
+                    <em style="color:rgba(59,130,246,0.3);font-size:11px;padding:4px 8px;display:block">No rolls yet</em>
                 </div>
             </details>
         </div>
         <div id="dice-grid">
-            <button id="btn-d4"   class="roll-btn">D4</button>
-            <button id="btn-d6"   class="roll-btn">D6</button>
-            <button id="btn-d8"   class="roll-btn">D8</button>
-            <button id="btn-d10"  class="roll-btn">D10</button>
-            <button id="btn-d12"  class="roll-btn">D12</button>
-            <button id="btn-d20"  class="roll-btn">D20</button>
-            <button id="btn-d100" class="roll-btn">D100</button>
+            <button id="btn-d4"    class="roll-btn">D4</button>
+            <button id="btn-d6"    class="roll-btn">D6</button>
+            <button id="btn-d8"    class="roll-btn">D8</button>
+            <button id="btn-d10"   class="roll-btn">D10</button>
+            <button id="btn-d12"   class="roll-btn">D12</button>
+            <button id="btn-d20"   class="roll-btn">D20</button>
+            <button id="btn-d100"  class="roll-btn">D100</button>
             <button id="btn-clear" class="roll-btn">Clear My Dice</button>
         </div>
     </div>
-
     <script type="module">
         import { initializeApp }                               from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, get, push, remove, onValue }
@@ -230,7 +188,6 @@
         const panelH = bottomPanel.getBoundingClientRect().height;
         const diceW  = window.innerWidth;
         const diceH  = window.innerHeight - panelH;
-
         diceContainer.style.width  = diceW + 'px';
         diceContainer.style.height = diceH + 'px';
 
@@ -256,8 +213,8 @@
         const timeAgo = (ts) => {
             const s = Math.floor((Date.now() - ts) / 1000);
             if (s < 60)   return `${s}s ago`;
-            if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-            return `${Math.floor(s / 3600)}h ago`;
+            if (s < 3600) return `${Math.floor(s/60)}m ago`;
+            return `${Math.floor(s/3600)}h ago`;
         };
 
         const computeD100 = (v0, v1) => {
@@ -290,7 +247,7 @@
         onValue(histRef, (snapshot) => {
             const raw = snapshot.val();
             if (!raw) {
-                histListEl.innerHTML = '<em style="color:rgba(255,204,204,0.3);font-size:11px;padding:4px 8px;display:block">No rolls yet</em>';
+                histListEl.innerHTML = `<em style="color:rgba(59,130,246,0.3);font-size:11px;padding:4px 8px;display:block">No rolls yet</em>`;
                 return;
             }
             const entries = Object.values(raw).sort((a, b) => b.timestamp - a.timestamp);
@@ -320,17 +277,14 @@
         };
 
         let busy = false;
-
         const doRoll = async (notation, label, isPercentile = false) => {
             if (busy) return;
-            busy = true;
-            setReady(false);
+            busy = true; setReady(false);
             try {
                 await set(myRef, { notation, label, status: "rolling", timestamp: Date.now() });
                 Box.clear();
                 const results = await Box.roll(notation);
                 const rawVals = results.map(r => r.value);
-
                 let display, total;
                 if (isPercentile) {
                     total   = computeD100(rawVals[0], rawVals[1]);
@@ -341,15 +295,13 @@
                         ? `[${rawVals.join(" + ")}] = ${total}`
                         : String(total);
                 }
-
                 await set(myRef, { notation, label, display, total, status: "complete", timestamp: Date.now() });
                 await saveToHistory({ player: PLAYER_NAME, notation, label, display, total, timestamp: Date.now() });
                 setTimeout(() => set(myRef, null), 10000);
             } catch (err) {
                 console.error("Roll error:", err);
             } finally {
-                busy = false;
-                setReady(true);
+                busy = false; setReady(true);
             }
         };
 
