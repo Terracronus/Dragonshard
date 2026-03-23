@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dice Arena – Carlo</title>
     <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
         body {
             margin: 0;
             background: #0a0002;
@@ -18,70 +20,76 @@
 
         #dice-box {
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+            inset: 0;
             width: 100vw; height: 100vh;
             z-index: 1;
         }
         #dice-box canvas {
             position: absolute !important;
-            top: 0 !important; left: 0 !important;
-            width: 100% !important; height: 100% !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
         }
 
         /* ── Status bar top-right ── */
         #engine-status {
-            position: absolute; top: 20px; right: 20px;
-            color: #ffcccc; font-size: 12px; z-index: 100;
+            position: absolute; top: 16px; right: 16px;
+            color: #ffcccc; font-size: 11px; z-index: 100;
             pointer-events: none; letter-spacing: 1px;
         }
 
         /* ── Back nav top-left ── */
         .back-nav {
-            position: absolute; top: 20px; left: 20px; z-index: 100;
+            position: absolute; top: 14px; left: 14px; z-index: 100;
             color: #ff3366; text-decoration: none; font-size: 11px;
-            border: 1px solid rgba(255, 51, 102, 0.3); padding: 8px 15px;
-            border-radius: 20px; background: rgba(10, 0, 2, 0.6);
+            border: 1px solid rgba(255, 51, 102, 0.3); padding: 7px 14px;
+            border-radius: 20px; background: rgba(10, 0, 2, 0.7);
             text-transform: uppercase; letter-spacing: 2px;
         }
 
         /* ── Live roll notifications (top centre) ── */
         #roll-log {
             position: absolute;
-            top: 65px; left: 50%; transform: translateX(-50%);
+            top: 60px; left: 50%; transform: translateX(-50%);
             z-index: 100; display: flex; flex-direction: column;
-            align-items: center; gap: 8px; pointer-events: none;
-            width: 90%; max-width: 420px;
+            align-items: center; gap: 6px; pointer-events: none;
+            width: calc(100% - 32px); max-width: 420px;
         }
         .roll-note {
-            width: 100%; box-sizing: border-box;
-            background: rgba(10, 0, 2, 0.88);
-            padding: 10px 18px; border-radius: 6px;
-            font-size: 13px; letter-spacing: 1px; text-align: center;
-            animation: slideIn 0.25s ease;
+            width: 100%;
+            background: rgba(10, 0, 2, 0.9);
+            padding: 9px 16px; border-radius: 6px;
+            font-size: 13px; letter-spacing: 0.5px; text-align: center;
+            animation: slideIn 0.2s ease;
         }
         .roll-note.rolling { border: 1px solid #ff9933; color: #ffcc99; }
         .roll-note.complete { border: 1px solid #44ffaa; color: #aaffdd; }
         .roll-note.mine     { border-color: #ff3366;  color: #ffcccc; }
         @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-6px); }
+            from { opacity: 0; transform: translateY(-5px); }
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── Roll History (bottom-left collapsible) ── */
-        #history-wrap {
+        /* ── Bottom panel (history + buttons) ── */
+        #bottom-panel {
             position: absolute;
-            bottom: 110px; left: 20px;
+            bottom: 0; left: 0; right: 0;
             z-index: 100;
-            max-width: 280px;
+            padding: 0 12px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
+
+        /* ── Roll History ── */
         #history-wrap details {
-            background: rgba(10, 0, 2, 0.85);
-            border: 1px solid rgba(255, 51, 102, 0.35);
+            background: rgba(10, 0, 2, 0.88);
+            border: 1px solid rgba(255, 51, 102, 0.3);
             border-radius: 8px;
             overflow: hidden;
         }
         #history-wrap summary {
-            padding: 9px 16px;
+            padding: 8px 14px;
             font-size: 11px;
             letter-spacing: 2px;
             text-transform: uppercase;
@@ -96,17 +104,17 @@
         #history-wrap summary::-webkit-details-marker { display: none; }
         #history-wrap summary::before {
             content: '▶';
-            font-size: 9px;
+            font-size: 8px;
             transition: transform 0.2s;
-            color: rgba(255,51,102,0.6);
+            color: rgba(255,51,102,0.5);
         }
         #history-wrap details[open] summary::before { transform: rotate(90deg); }
         #history-list {
-            padding: 0 12px 10px;
+            padding: 0 10px 10px;
             display: flex;
             flex-direction: column;
-            gap: 5px;
-            max-height: 260px;
+            gap: 4px;
+            max-height: 180px;
             overflow-y: auto;
         }
         #history-list::-webkit-scrollbar { width: 3px; }
@@ -115,30 +123,48 @@
             font-size: 11px;
             color: #ffcccc;
             padding: 5px 8px;
-            border-left: 2px solid rgba(255,51,102,0.3);
-            letter-spacing: 0.5px;
-            line-height: 1.5;
+            border-left: 2px solid rgba(255,51,102,0.25);
+            letter-spacing: 0.3px;
+            line-height: 1.6;
         }
-        .hist-entry .hist-who  { color: #ff9999; font-size: 10px; }
-        .hist-entry .hist-roll { color: #ffffff; }
-        .hist-entry .hist-time { color: rgba(255,204,204,0.4); font-size: 10px; margin-left: 4px; }
+        .hist-who  { color: #ff9999; font-size: 10px; }
+        .hist-roll { color: #ffffff; }
+        .hist-time { color: rgba(255,204,204,0.35); font-size: 10px; margin-left: 4px; }
 
-        /* ── Roll controls (bottom centre) ── */
-        .controls {
-            position: absolute; bottom: 40px; width: 100%;
-            text-align: center; z-index: 100;
-            display: flex; flex-direction: column; align-items: center; gap: 15px;
+        /* ── Dice button grid ── */
+        #dice-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
         }
-        .button-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .roll-btn {
-            background: rgba(40, 0, 10, 0.6); border: 1px solid #ff3366;
-            color: #ffcccc; padding: 12px 25px;
-            text-transform: uppercase; letter-spacing: 2px;
-            cursor: pointer; border-radius: 4px;
-            transition: all 0.4s ease; font-size: 12px;
+            background: rgba(40, 0, 10, 0.75);
+            border: 1px solid #ff3366;
+            color: #ffcccc;
+            padding: 14px 4px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.25s, box-shadow 0.25s;
+            font-size: 13px;
+            font-family: serif;
+            width: 100%;
+            -webkit-tap-highlight-color: transparent;
         }
-        .roll-btn:hover { background: #ff3366; color: white; box-shadow: 0 0 20px #ff3366; }
-        .roll-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .roll-btn:active { background: #ff3366; color: white; box-shadow: 0 0 16px #ff3366; }
+        .roll-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* D100 spans 2 columns, Clear spans 2 columns */
+        #btn-d100  { grid-column: span 2; }
+        #btn-clear {
+            grid-column: span 2;
+            border-color: rgba(255, 51, 102, 0.35);
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            color: rgba(255,204,204,0.6);
+            padding: 10px 4px;
+        }
     </style>
 </head>
 <body>
@@ -147,16 +173,22 @@
     <div id="dice-box"></div>
     <div id="roll-log"></div>
 
-    <!-- Roll History -->
-    <div id="history-wrap">
-        <details>
-            <summary>Roll History</summary>
-            <div id="history-list"><em style="color:rgba(255,204,204,0.3);font-size:11px;padding:4px 8px">No rolls yet</em></div>
-        </details>
-    </div>
+    <div id="bottom-panel">
+        <!-- Roll History -->
+        <div id="history-wrap">
+            <details>
+                <summary>Roll History</summary>
+                <div id="history-list">
+                    <em style="color:rgba(255,204,204,0.3);font-size:11px;padding:4px 8px;display:block">No rolls yet</em>
+                </div>
+            </details>
+        </div>
 
-    <div class="controls">
-        <div class="button-group">
+        <!-- Dice buttons: 4-col grid -->
+        <!-- Row 1: D4  D6  D8  D10  -->
+        <!-- Row 2: D12 D20 D100(×2) -->
+        <!-- Row 3: Clear(×2) [empty] -->
+        <div id="dice-grid">
             <button id="btn-d4"   class="roll-btn">D4</button>
             <button id="btn-d6"   class="roll-btn">D6</button>
             <button id="btn-d8"   class="roll-btn">D8</button>
@@ -164,23 +196,19 @@
             <button id="btn-d12"  class="roll-btn">D12</button>
             <button id="btn-d20"  class="roll-btn">D20</button>
             <button id="btn-d100" class="roll-btn">D100</button>
-        </div>
-        <div class="button-group">
-            <button id="btn-clear" class="roll-btn" style="border-color:rgba(255,51,102,0.4);font-size:11px;padding:8px 18px;">Clear My Dice</button>
+            <button id="btn-clear" class="roll-btn">Clear My Dice</button>
         </div>
     </div>
 
     <script type="module">
-        import { initializeApp }                          from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { initializeApp }                               from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, get, push, remove, onValue }
-                                                            from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import DiceBox                                      from "https://terracronus.github.io/Dragonshard/assets/dice-box/dice-box.es.min.js";
+                                                                 from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import DiceBox                                           from "https://terracronus.github.io/Dragonshard/assets/dice-box/dice-box.es.min.js";
 
-        // ── Identity ─────────────────────────────────────────────
         const PLAYER_NAME = "Carlo";
         const MAX_HISTORY = 10;
 
-        // ── Firebase ─────────────────────────────────────────────
         const firebaseConfig = {
             apiKey:            "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
             authDomain:        "terracronus-dragonshard.firebaseapp.com",
@@ -191,13 +219,12 @@
             databaseURL:       "https://terracronus-dragonshard-default-rtdb.europe-west1.firebasedatabase.app/"
         };
 
-        const app        = initializeApp(firebaseConfig);
-        const db         = getDatabase(app);
-        const myRef      = ref(db, `roll_status/${PLAYER_NAME}`);
-        const allRef     = ref(db, "roll_status");
-        const histRef    = ref(db, "roll_history");
+        const app     = initializeApp(firebaseConfig);
+        const db      = getDatabase(app);
+        const myRef   = ref(db, `roll_status/${PLAYER_NAME}`);
+        const allRef  = ref(db, "roll_status");
+        const histRef = ref(db, "roll_history");
 
-        // ── DiceBox ──────────────────────────────────────────────
         const engineStatus = document.getElementById('engine-status');
         const rollButtons  = document.querySelectorAll('.roll-btn');
         const logEl        = document.getElementById('roll-log');
@@ -226,27 +253,24 @@
 
         await Box.init();
         Box.updateConfig({ width: window.innerWidth, height: window.innerHeight });
-
         engineStatus.innerText = "Arena Ready";
         setReady(true);
 
         // ── Helpers ──────────────────────────────────────────────
         const timeAgo = (ts) => {
             const s = Math.floor((Date.now() - ts) / 1000);
-            if (s < 60)  return `${s}s ago`;
-            if (s < 3600) return `${Math.floor(s/60)}m ago`;
-            return `${Math.floor(s/3600)}h ago`;
+            if (s < 60)   return `${s}s ago`;
+            if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+            return `${Math.floor(s / 3600)}h ago`;
         };
 
-        // D100 via 2d10 percentile: tens die (1-10→0,10,…,90) + units die (1-10→1-10, 10→0)
-        // Double-zero = 100.
         const computeD100 = (v0, v1) => {
-            const tens  = (v0 % 10) * 10;   // 10→0, 1→10, …, 9→90
-            const units = (v1 % 10);        // 10→0, 1→1, …, 9→9
+            const tens  = (v0 % 10) * 10;
+            const units = (v1 % 10);
             return (tens + units) === 0 ? 100 : tens + units;
         };
 
-        // ── Live notification renderer ────────────────────────────
+        // ── Live notifications ────────────────────────────────────
         onValue(allRef, (snapshot) => {
             const all = snapshot.val() || {};
             logEl.innerHTML = "";
@@ -257,8 +281,8 @@
                 el.className = `roll-note ${data.status}${mine ? " mine" : ""}`;
                 if (data.status === "rolling") {
                     el.textContent = mine
-                        ? `Rolling ${data.label || data.notation}…`
-                        : `${player} is rolling ${data.label || data.notation}…`;
+                        ? `Rolling ${data.label}…`
+                        : `${player} is rolling ${data.label}…`;
                 } else if (data.status === "complete") {
                     el.textContent = mine
                         ? `You rolled ${data.label}: ${data.display}`
@@ -272,43 +296,37 @@
         onValue(histRef, (snapshot) => {
             const raw = snapshot.val();
             if (!raw) {
-                histListEl.innerHTML = '<em style="color:rgba(255,204,204,0.3);font-size:11px;padding:4px 8px">No rolls yet</em>';
+                histListEl.innerHTML = '<em style="color:rgba(255,204,204,0.3);font-size:11px;padding:4px 8px;display:block">No rolls yet</em>';
                 return;
             }
-            // Sort newest-first for display
-            const entries = Object.values(raw)
-                .sort((a, b) => b.timestamp - a.timestamp);
-
+            const entries = Object.values(raw).sort((a, b) => b.timestamp - a.timestamp);
             histListEl.innerHTML = "";
             for (const e of entries) {
                 const div = document.createElement('div');
                 div.className = "hist-entry";
-                div.innerHTML = `
-                    <span class="hist-who">${e.player}</span>
-                    <span class="hist-time">${timeAgo(e.timestamp)}</span><br>
-                    <span class="hist-roll">${e.label}: ${e.display}</span>
-                `;
+                div.innerHTML =
+                    `<span class="hist-who">${e.player}</span><span class="hist-time">${timeAgo(e.timestamp)}</span><br>` +
+                    `<span class="hist-roll">${e.label}: ${e.display}</span>`;
                 histListEl.appendChild(div);
             }
         });
 
-        // ── Push to history, trim to MAX_HISTORY ─────────────────
+        // ── History trim ─────────────────────────────────────────
         const saveToHistory = async (entry) => {
             await push(histRef, entry);
-            // Trim: read, find oldest keys if > MAX_HISTORY, delete them
             const snap = await get(histRef);
             const val  = snap.val();
             if (!val) return;
-            const keysOldest = Object.entries(val)
+            const oldest = Object.entries(val)
                 .sort((a, b) => a[1].timestamp - b[1].timestamp)
                 .map(([k]) => k);
-            if (keysOldest.length > MAX_HISTORY) {
-                const toDelete = keysOldest.slice(0, keysOldest.length - MAX_HISTORY);
+            if (oldest.length > MAX_HISTORY) {
+                const toDelete = oldest.slice(0, oldest.length - MAX_HISTORY);
                 await Promise.all(toDelete.map(k => remove(ref(db, `roll_history/${k}`))));
             }
         };
 
-        // ── Roll logic ───────────────────────────────────────────
+        // ── Roll logic ────────────────────────────────────────────
         let busy = false;
 
         const doRoll = async (notation, label, isPercentile = false) => {
@@ -317,14 +335,8 @@
             setReady(false);
 
             try {
-                // Phase 1 – announce
-                await set(myRef, {
-                    notation, label,
-                    status:    "rolling",
-                    timestamp: Date.now()
-                });
+                await set(myRef, { notation, label, status: "rolling", timestamp: Date.now() });
 
-                // Phase 2 – roll locally
                 Box.clear();
                 const results = await Box.roll(notation);
                 const rawVals = results.map(r => r.value);
@@ -340,21 +352,8 @@
                         : String(total);
                 }
 
-                // Phase 3 – broadcast result
-                await set(myRef, {
-                    notation, label, display, total,
-                    status:    "complete",
-                    timestamp: Date.now()
-                });
-
-                // Phase 4 – save to shared history (trimmed to 10)
-                await saveToHistory({
-                    player: PLAYER_NAME,
-                    notation, label, display, total,
-                    timestamp: Date.now()
-                });
-
-                // Phase 5 – auto-clear live status after 10 s
+                await set(myRef, { notation, label, display, total, status: "complete", timestamp: Date.now() });
+                await saveToHistory({ player: PLAYER_NAME, notation, label, display, total, timestamp: Date.now() });
                 setTimeout(() => set(myRef, null), 10000);
 
             } catch (err) {
@@ -365,7 +364,6 @@
             }
         };
 
-        // ── Button bindings ──────────────────────────────────────
         document.getElementById('btn-d4')  .addEventListener('click', () => doRoll('1d4',  'D4'));
         document.getElementById('btn-d6')  .addEventListener('click', () => doRoll('1d6',  'D6'));
         document.getElementById('btn-d8')  .addEventListener('click', () => doRoll('1d8',  'D8'));
@@ -373,7 +371,6 @@
         document.getElementById('btn-d12') .addEventListener('click', () => doRoll('1d12', 'D12'));
         document.getElementById('btn-d20') .addEventListener('click', () => doRoll('1d20', 'D20'));
         document.getElementById('btn-d100').addEventListener('click', () => doRoll('2d10', 'D100', true));
-
         document.getElementById('btn-clear').addEventListener('click', () => Box.clear());
     </script>
 </body>
