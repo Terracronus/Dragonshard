@@ -378,6 +378,15 @@
 
         function clearRT() { if(rndTimer){clearTimeout(rndTimer);rndTimer=null;} }
 
+        /* ──────────────────────── GLOBAL EXPORTS */
+        // Expose functions to the window so inline onclick handlers can reach them
+        window.selPuzzle = selPuzzle;
+        window.cancelGame = cancelGame;
+        window.tapRdy = tapRdy;
+        window.castVote = castVote;
+        window.advance = advance;
+        window.reset = reset;
+
         /* ──────────────────────── RENDER */
         function render(s,changed) {
             switch(s.phase){
