@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DM Settings</title>
+    <style>
+        body {
+            margin: 0; background: #00000d; color: white; font-family: 'serif';
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
+            background-image: radial-gradient(circle, #0d0d1a 0%, #000005 100%);
+        }
+        .back-nav {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            z-index: 100;
+            color: #9090bb;
+            text-decoration: none;
+            font-size: 11px;
+            border: 1px solid rgba(144,144,187,0.35);
+            padding: 7px 14px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+        .back-nav:hover {
+            background: rgba(144,144,187,0.2);
+        }
+        .menu {
+            text-align: center; border: 1px solid rgba(144,144,187,0.2);
+            padding: 50px 30px; border-radius: 20px; background: rgba(15,15,30,0.5);
+            backdrop-filter: blur(10px); box-shadow: 0 0 30px rgba(144,144,187,0.1);
+            max-width: 400px; width: 90%;
+        }
+        h1 {
+            font-size: 26px; letter-spacing: 5px; color: #9090bb;
+            text-shadow: 0 0 15px rgba(144,144,187,0.8);
+            margin-bottom: 20px; text-transform: uppercase;
+        }
+        p.subtitle {
+            color: rgba(220,220,245,0.7);
+            font-size: 14px;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+        .btn {
+            display: block; width: 240px; margin: 20px auto; padding: 22px;
+            background: rgba(5,5,18,0.7); border: 1px solid #9090bb; color: rgba(220,220,245,0.85);
+            text-decoration: none; text-transform: uppercase; letter-spacing: 3px;
+            border-radius: 4px; transition: all 0.4s ease; font-size: 14px; cursor: pointer;
+        }
+        .btn:active {
+            background: #9090bb; color: white;
+            box-shadow: 0 0 25px rgba(144,144,187,0.8);
+            transform: scale(0.98);
+        }
+        .btn-danger {
+            border-color: rgba(255, 68, 68, 0.5);
+            color: #ff8888;
+        }
+        .btn-danger:active {
+            background: rgba(255, 68, 68, 0.8);
+            box-shadow: 0 0 25px rgba(255, 68, 68, 0.5);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            align-items: center; justify-content: center; z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: rgba(15,15,30,0.95); border: 1px solid #ff4444;
+            padding: 40px 30px; border-radius: 10px; text-align: center;
+            max-width: 350px; width: 90%; box-shadow: 0 0 40px rgba(255, 68, 68, 0.2);
+        }
+        .modal-box h2 {
+            color: #ff8888; margin-top: 0; font-size: 20px; letter-spacing: 2px; text-transform: uppercase;
+        }
+        .modal-box p {
+            color: #dddddd; font-size: 15px; line-height: 1.5; margin-bottom: 30px;
+        }
+        .modal-buttons {
+            display: flex; gap: 15px; justify-content: center;
+        }
+        .modal-buttons .btn {
+            width: auto; margin: 0; padding: 15px 25px; flex: 1;
+        }
+        
+        #status-msg {
+            display: none; color: #88ff88; font-size: 14px; margin-top: 20px; letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <a href="Hub.html" class="back-nav">← Hub</a>
+    
+    <div class="menu">
+        <h1>Settings</h1>
+        <p class="subtitle">Dungeon Master controls and data management.</p>
+        
+        <button id="wipe-btn" class="btn btn-danger">Wipe Data?</button>
+        <div id="status-msg">Sending Stone data cleared successfully.</div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal-box">
+            <h2>Are you sure?</h2>
+            <p>This will permanently delete all Sending Stone conversation history for all players. This cannot be undone.</p>
+            <div class="modal-buttons">
+                <button class="btn" id="btn-no">No</button>
+                <button class="btn btn-danger" id="btn-yes">Yes</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Firebase Configuration (Same as your other files)
+        const FB = {
+            apiKey: "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
+            authDomain: "terracronus-dragonshard.firebaseapp.com",
+            projectId: "terracronus-dragonshard",
+            storageBucket: "terracronus-dragonshard.firebasestorage.app",
+            messagingSenderId: "479723332460",
+            appId: "1:479723332460:web:2ea5b21c67ddc70b018949",
+            databaseURL: "https://terracronus-dragonshard-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+
+        const app = initializeApp(FB);
+        const db = getDatabase(app);
+
+        // UI Elements
+        const wipeBtn = document.getElementById('wipe-btn');
+        const modal = document.getElementById('confirm-modal');
+        const btnYes = document.getElementById('btn-yes');
+        const btnNo = document.getElementById('btn-no');
+        const statusMsg = document.getElementById('status-msg');
+
+        // Show modal when clicking Wipe Data
+        wipeBtn.addEventListener('click', () => {
+            modal.classList.add('active');
+            statusMsg.style.display = 'none';
+        });
+
+        // Hide modal when clicking No
+        btnNo.addEventListener('click', () => {
+            modal.classList.remove('active');
+        });
+
+        // Process deletion when clicking Yes
+        btnYes.addEventListener('click', async () => {
+            // Disable button briefly to prevent double clicks
+            btnYes.disabled = true;
+            btnYes.textContent = "Wiping...";
+            
+            try {
+                // Remove the entire 'sending_stone' node from the realtime database
+                await remove(ref(db, 'sending_stone'));
+                
+                // Hide modal and show success status
+                modal.classList.remove('active');
+                statusMsg.style.display = 'block';
+                
+                // Reset success message after a few seconds
+                setTimeout(() => {
+                    statusMsg.style.display = 'none';
+                }, 4000);
+            } catch (error) {
+                console.error("Error wiping data: ", error);
+                alert("An error occurred while trying to wipe the data.");
+            } finally {
+                // Reset button state
+                btnYes.disabled = false;
+                btnYes.textContent = "Yes";
+            }
+        });
+    </script>
+</body>
+</html>
