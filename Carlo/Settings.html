@@ -106,14 +106,14 @@
         <p class="subtitle">Dungeon Master controls and data management.</p>
         
         <button id="wipe-btn" class="btn btn-danger">Wipe Data?</button>
-        <div id="status-msg">Sending Stone data cleared successfully.</div>
+        <div id="status-msg">All campaign data cleared successfully.</div>
     </div>
 
     <!-- Confirmation Modal -->
     <div class="modal-overlay" id="confirm-modal">
         <div class="modal-box">
             <h2>Are you sure?</h2>
-            <p>This will permanently delete all Sending Stone conversation history for all players. This cannot be undone.</p>
+            <p>This will permanently delete all Sending Stone conversations, Dice Arena history, and Arcane Trials progress. This cannot be undone.</p>
             <div class="modal-buttons">
                 <button class="btn" id="btn-no">No</button>
                 <button class="btn btn-danger" id="btn-yes">Yes</button>
@@ -164,8 +164,13 @@
             btnYes.textContent = "Wiping...";
             
             try {
-                // Remove the entire 'sending_stone' node from the realtime database
-                await remove(ref(db, 'sending_stone'));
+                // Remove all app nodes from the realtime database
+                await Promise.all([
+                    remove(ref(db, 'sending_stone')),
+                    remove(ref(db, 'roll_status')),
+                    remove(ref(db, 'roll_history')),
+                    remove(ref(db, 'puzzle_game'))
+                ]);
                 
                 // Hide modal and show success status
                 modal.classList.remove('active');
