@@ -6,271 +6,107 @@
     <title>Arcane Trials — Paige</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --ac:   #f59e0b;
-            --ar:   245;
-            --ag:   158;
-            --ab:   11;
-        }
+        :root { --ac: #f59e0b; --ar: 245; --ag: 158; --ab: 11; }
         body {
-            background: #0f0500;
-            background-image: radial-gradient(circle, #201000 0%, #060200 100%);
-            color: white; font-family: serif;
-            height: 100vh; width: 100vw;
-            overflow: hidden;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
+            background: #0f0500; background-image: radial-gradient(circle, #201000 0%, #060200 100%);
+            color: white; font-family: serif; height: 100vh; width: 100vw; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         .back-nav {
             position: absolute; top: 14px; left: 14px; z-index: 100;
             color: var(--ac); text-decoration: none; font-size: 11px;
             border: 1px solid rgba(var(--ar),var(--ag),var(--ab),0.35);
-            padding: 7px 14px; border-radius: 20px;
-            background: rgba(0,0,0,0.5);
+            padding: 7px 14px; border-radius: 20px; background: rgba(0,0,0,0.5);
             text-transform: uppercase; letter-spacing: 2px;
         }
         #gc {
-            width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 60px 20px 20px;
+            width: 100%; height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; padding: 60px 20px 20px;
         }
-        /* Waiting */
-        .w-glyph {
-            font-size: 60px; color: var(--ac); opacity: 0.3;
-            animation: pulse 2.5s ease-in-out infinite;
-            margin-bottom: 18px;
-        }
-        @keyframes pulse {
-            0%,100% { opacity: 0.15; transform: scale(1); }
-            50%      { opacity: 0.55; transform: scale(1.06); }
-        }
-        .w-text {
-            font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
-            color: rgba(255,255,255,0.25);
-        }
-        /* Headings */
-        .ph-title {
-            font-size: 20px; letter-spacing: 5px; text-transform: uppercase;
-            color: var(--ac); text-shadow: 0 0 18px var(--ac);
-            margin-bottom: 6px; text-align: center;
-        }
-        .ph-sub {
-            font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
-            color: rgba(255,255,255,0.25); text-align: center; margin-bottom: 28px;
-        }
-        /* Puzzle selector */
-        .pz-grid {
-            display: flex; flex-direction: column; gap: 14px; width: 270px;
-        }
+        .w-glyph { font-size: 60px; color: var(--ac); opacity: 0.3; animation: pulse 2.5s ease-in-out infinite; margin-bottom: 18px; }
+        @keyframes pulse { 0%,100% { opacity: 0.15; transform: scale(1); } 50% { opacity: 0.55; transform: scale(1.06); } }
+        .w-text { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.25); }
+        .ph-title { font-size: 20px; letter-spacing: 5px; text-transform: uppercase; color: var(--ac); text-shadow: 0 0 18px var(--ac); margin-bottom: 6px; text-align: center; }
+        .ph-sub { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.25); text-align: center; margin-bottom: 28px; }
+        .pz-grid { display: flex; flex-direction: column; gap: 14px; width: 270px; }
         .pz-card {
-            background: rgba(5,5,15,0.75);
-            border: 1px solid rgba(var(--ar),var(--ag),var(--ab),0.35);
-            color: rgba(220,220,245,0.85);
-            padding: 18px 22px; border-radius: 8px;
-            cursor: pointer; text-align: left; font-family: serif;
-            transition: all 0.3s ease; width: 100%;
+            background: rgba(5,5,15,0.75); border: 1px solid rgba(var(--ar),var(--ag),var(--ab),0.35);
+            color: rgba(220,220,245,0.85); padding: 18px 22px; border-radius: 8px;
+            cursor: pointer; text-align: left; font-family: serif; transition: all 0.3s ease; width: 100%;
         }
-        .pz-card:active {
-            background: rgba(var(--ar),var(--ag),var(--ab),0.15);
-            box-shadow: 0 0 18px rgba(var(--ar),var(--ag),var(--ab),0.3);
-            transform: scale(0.97);
-        }
+        .pz-card:active { background: rgba(var(--ar),var(--ag),var(--ab),0.15); box-shadow: 0 0 18px rgba(var(--ar),var(--ag),var(--ab),0.3); transform: scale(0.97); }
         .pz-card.locked { opacity: 0.3; cursor: not-allowed; }
         .pz-name { font-size: 14px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 3px; }
         .pz-desc { font-size: 11px; letter-spacing: 2px; color: rgba(255,255,255,0.35); text-transform: uppercase; }
-        /* Ready list */
         .rdy-list { display: flex; flex-direction: column; gap: 7px; width: 240px; }
-        .rdy-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 8px 14px; background: rgba(255,255,255,0.04);
-            border-radius: 6px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
-        }
+        .rdy-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: rgba(255,255,255,0.04); border-radius: 6px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; }
         .rdy-row .rname { color: rgba(255,255,255,0.45); }
         .rdy-row .rstatus { color: rgba(255,255,255,0.18); }
         .rdy-row.yes .rstatus { color: #44ff78; }
         .rdy-row.yes { background: rgba(68,255,120,0.05); }
-        /* Ready button */
         .btn-rdy {
-            width: 200px; padding: 22px 10px;
-            font-size: 15px; letter-spacing: 4px; text-transform: uppercase;
-            font-family: serif; cursor: pointer;
-            background: rgba(5,5,18,0.8);
-            border: 2px solid var(--ac); color: var(--ac);
-            border-radius: 8px; transition: all 0.4s ease;
-            margin-bottom: 28px; display: block;
+            width: 200px; padding: 22px 10px; font-size: 15px; letter-spacing: 4px; text-transform: uppercase;
+            font-family: serif; cursor: pointer; background: rgba(5,5,18,0.8); border: 2px solid var(--ac);
+            color: var(--ac); border-radius: 8px; transition: all 0.4s ease; margin-bottom: 28px; display: block;
         }
-        .btn-rdy.confirmed {
-            background: rgba(68,255,120,0.12);
-            border-color: #44ff78; color: #44ff78;
-            box-shadow: 0 0 22px rgba(68,255,120,0.25);
-            cursor: default;
-        }
-        /* Cancel */
-        .btn-cancel {
-            background: none;
-            border: 1px solid rgba(255,70,85,0.4);
-            color: rgba(255,70,85,0.55);
-            padding: 9px 20px; border-radius: 6px;
-            font-family: serif; font-size: 11px;
-            letter-spacing: 2px; text-transform: uppercase;
-            cursor: pointer; margin-top: 20px;
-        }
-        /* Countdown */
-        .cnt-num {
-            font-size: 110px; font-weight: bold; line-height: 1;
-            color: var(--ac); text-shadow: 0 0 40px var(--ac);
-            animation: cntPop 0.3s ease-out;
-        }
-        @keyframes cntPop {
-            0%   { transform: scale(1.4); opacity: 0; }
-            100% { transform: scale(1);   opacity: 1; }
-        }
-        .cnt-label {
-            font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
-            color: rgba(255,255,255,0.25); margin-top: 14px;
-        }
-        /* Round labels */
-        .rnd-bar {
-            font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
-            color: rgba(255,255,255,0.25); margin-bottom: 10px; text-align: center;
-        }
-        .role-badge {
-            font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-            padding: 5px 14px; border-radius: 16px; margin-bottom: 18px; display: inline-block;
-        }
-        .role-desc {
-            background: rgba(255,200,50,0.12);
-            border: 1px solid rgba(255,200,50,0.35); color: #ffc832;
-        }
-        .role-guess {
-            background: rgba(var(--ar),var(--ag),var(--ab),0.1);
-            border: 1px solid rgba(var(--ar),var(--ag),var(--ab),0.3); color: var(--ac);
-        }
-        /* Symbol large (describer) */
-        .sym-lg {
-            width: 160px; height: 160px; margin: 0 auto 16px;
-            color: #ffc832; filter: drop-shadow(0 0 18px rgba(255,200,50,0.35));
-        }
+        .btn-rdy.confirmed { background: rgba(68,255,120,0.12); border-color: #44ff78; color: #44ff78; box-shadow: 0 0 22px rgba(68,255,120,0.25); cursor: default; }
+        .btn-cancel { background: none; border: 1px solid rgba(255,70,85,0.4); color: rgba(255,70,85,0.55); padding: 9px 20px; border-radius: 6px; font-family: serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; margin-top: 20px; }
+        .cnt-num { font-size: 110px; font-weight: bold; line-height: 1; color: var(--ac); text-shadow: 0 0 40px var(--ac); animation: cntPop 0.3s ease-out; }
+        @keyframes cntPop { 0% { transform: scale(1.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .cnt-label { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-top: 14px; }
+        .rnd-bar { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 10px; text-align: center; }
+        .role-badge { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; padding: 5px 14px; border-radius: 16px; margin-bottom: 18px; display: inline-block; }
+        .role-desc { background: rgba(255,200,50,0.12); border: 1px solid rgba(255,200,50,0.35); color: #ffc832; }
+        .role-guess { background: rgba(var(--ar),var(--ag),var(--ab),0.1); border: 1px solid rgba(var(--ar),var(--ag),var(--ab),0.3); color: var(--ac); }
+        .sym-lg { width: 160px; height: 160px; margin: 0 auto 16px; color: #ffc832; filter: drop-shadow(0 0 18px rgba(255,200,50,0.35)); }
         .sym-lg svg { width: 100%; height: 100%; }
-        .desc-instr {
-            font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
-            color: rgba(255,200,50,0.55); text-align: center; margin-bottom: 20px;
-        }
-        /* Symbol grid (guesser) */
-        .sym-grid {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 12px; width: 260px; margin-bottom: 18px;
-        }
-        .sym-btn {
-            aspect-ratio: 1;
-            background: rgba(5,5,18,0.8);
-            border: 2px solid rgba(var(--ar),var(--ag),var(--ab),0.25);
-            border-radius: 10px; cursor: pointer;
-            color: var(--ac); padding: 14px;
-            transition: all 0.18s ease; font-family: serif;
-        }
+        .desc-instr { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,200,50,0.55); text-align: center; margin-bottom: 20px; }
+        .sym-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 260px; margin-bottom: 18px; }
+        .sym-btn { aspect-ratio: 1; background: rgba(5,5,18,0.8); border: 2px solid rgba(var(--ar),var(--ag),var(--ab),0.25); border-radius: 10px; cursor: pointer; color: var(--ac); padding: 14px; transition: all 0.18s ease; font-family: serif; }
         .sym-btn svg { width: 100%; height: 100%; }
         .sym-btn:disabled { cursor: default; }
-        .sym-btn.selected {
-            background: rgba(var(--ar),var(--ag),var(--ab),0.18);
-            border-color: var(--ac);
-            box-shadow: 0 0 18px rgba(var(--ar),var(--ag),var(--ab),0.35);
-        }
-        /* Timer */
+        .sym-btn.selected { background: rgba(var(--ar),var(--ag),var(--ab),0.18); border-color: var(--ac); box-shadow: 0 0 18px rgba(var(--ar),var(--ag),var(--ab),0.35); }
         .timer-wrap { width: 220px; margin: 0 auto; }
-        .timer-track {
-            height: 4px; background: rgba(255,255,255,0.1);
-            border-radius: 2px; overflow: hidden; margin-bottom: 8px;
-        }
-        .timer-fill {
-            height: 100%; border-radius: 2px;
-            background: var(--ac); transition: width 0.08s linear, background 0.3s;
-        }
-        .timer-fill.urgent { background: #ff4455; }
-        .timer-sec {
-            text-align: center; font-size: 26px; font-weight: bold;
-            color: var(--ac);
-        }
-        /* DM view during round */
-        .dm-box {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 10px; width: 280px; text-align: center;
-        }
-        .dm-sec {
-            font-size: 56px; font-weight: bold;
-            color: var(--ac); text-shadow: 0 0 22px var(--ac);
-            line-height: 1;
-        }
-        .dm-desc-lbl {
-            font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
-            color: rgba(255,255,255,0.45);
-        }
+        .timer-track { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+        .timer-fill { height: 100%; border-radius: 2px; background: var(--ac); transition: width 0.08s linear, background 0.3s; }
+        .timer-fill.urgent { background: #ff4455; box-shadow: 0 0 15px #ff4455; }
+        .timer-sec { text-align: center; font-size: 26px; font-weight: bold; color: var(--ac); transition: color 0.3s; }
+        .dm-box { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 280px; text-align: center; }
+        .dm-sec { font-size: 56px; font-weight: bold; color: var(--ac); text-shadow: 0 0 22px var(--ac); line-height: 1; transition: color 0.3s; }
+        .dm-desc-lbl { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.45); }
         .dm-vlist { display: flex; flex-direction: column; gap: 6px; width: 100%; }
-        .dm-vrow {
-            display: flex; justify-content: space-between; padding: 7px 12px;
-            background: rgba(255,255,255,0.04); border-radius: 5px;
-            font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
-            color: rgba(255,255,255,0.35);
-        }
-        .dm-vrow.voted {
-            background: rgba(var(--ar),var(--ag),var(--ab),0.1);
-            color: var(--ac);
-        }
-        /* Reveal */
-        .rv-sym {
-            width: 110px; height: 110px; margin: 0 auto 12px;
-            color: #ffc832; filter: drop-shadow(0 0 14px rgba(255,200,50,0.35));
-        }
+        .dm-vrow { display: flex; justify-content: space-between; padding: 7px 12px; background: rgba(255,255,255,0.04); border-radius: 5px; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+        .dm-vrow.voted { background: rgba(var(--ar),var(--ag),var(--ab),0.1); color: var(--ac); }
+        .rv-sym { width: 110px; height: 110px; margin: 0 auto 12px; color: #ffc832; filter: drop-shadow(0 0 14px rgba(255,200,50,0.35)); }
         .rv-sym svg { width: 100%; height: 100%; }
-        .rv-outcome {
-            font-size: 18px; letter-spacing: 5px; text-transform: uppercase;
-            text-align: center; margin-bottom: 16px;
-        }
-        .rv-outcome.win  { color: #44ff78; text-shadow: 0 0 18px rgba(68,255,120,0.4); }
+        .rv-outcome { font-size: 18px; letter-spacing: 5px; text-transform: uppercase; text-align: center; margin-bottom: 16px; }
+        .rv-outcome.win { color: #44ff78; text-shadow: 0 0 18px rgba(68,255,120,0.4); }
         .rv-outcome.lose { color: #ff4455; text-shadow: 0 0 18px rgba(255,68,85,0.35); }
-        .rv-rows { display: flex; flex-direction: column; gap: 7px; width: 230px; margin-bottom: 16px; }
-        .rv-row {
-            display: flex; justify-content: space-between; padding: 7px 12px;
-            border-radius: 5px; font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
-        }
-        .rv-row.ok  { background: rgba(68,255,120,0.08); border: 1px solid rgba(68,255,120,0.25); color: #44ff78; }
-        .rv-row.bad { background: rgba(255,68,85,0.08);  border: 1px solid rgba(255,68,85,0.22); color: #ff6677; }
-        .score-line {
-            font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
-            color: rgba(255,255,255,0.3); text-align: center; margin-bottom: 20px;
-        }
-        /* Buttons */
-        .btn-action {
-            padding: 14px 28px; font-family: serif;
-            font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
-            background: rgba(5,5,18,0.8);
-            border: 1px solid var(--ac); color: var(--ac);
-            border-radius: 6px; cursor: pointer; transition: all 0.3s ease;
-        }
-        .btn-action:active {
-            background: rgba(var(--ar),var(--ag),var(--ab),0.18);
-            box-shadow: 0 0 18px rgba(var(--ar),var(--ag),var(--ab),0.35);
-            transform: scale(0.97);
-        }
-        /* Game over */
-        .go-head {
-            font-size: 12px; letter-spacing: 5px; text-transform: uppercase;
-            color: rgba(255,255,255,0.25); margin-bottom: 14px; text-align: center;
-        }
-        .go-score {
-            font-size: 80px; font-weight: bold; line-height: 1;
-            color: var(--ac); text-shadow: 0 0 35px var(--ac); text-align: center;
-        }
+        .rv-rows { display: flex; flex-direction: column; gap: 7px; width: 240px; margin-bottom: 16px; }
+        .rv-row { display: flex; justify-content: space-between; padding: 7px 12px; border-radius: 5px; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+        .rv-row.ok { background: rgba(68,255,120,0.08); border: 1px solid rgba(68,255,120,0.25); color: #44ff78; }
+        .rv-row.bad { background: rgba(255,68,85,0.08); border: 1px solid rgba(255,68,85,0.22); color: #ff6677; }
+        .score-line { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.3); text-align: center; margin-bottom: 20px; }
+        .btn-action { padding: 14px 28px; font-family: serif; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; background: rgba(5,5,18,0.8); border: 1px solid var(--ac); color: var(--ac); border-radius: 6px; cursor: pointer; transition: all 0.3s ease; }
+        .btn-action:active { background: rgba(var(--ar),var(--ag),var(--ab),0.18); box-shadow: 0 0 18px rgba(var(--ar),var(--ag),var(--ab),0.35); transform: scale(0.97); }
+        .go-head { font-size: 12px; letter-spacing: 5px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 14px; text-align: center; }
+        .go-score { font-size: 80px; font-weight: bold; line-height: 1; color: var(--ac); text-shadow: 0 0 35px var(--ac); text-align: center; }
         .go-max { font-size: 22px; color: rgba(255,255,255,0.25); }
-        .go-title {
-            font-size: 16px; letter-spacing: 5px; text-transform: uppercase;
-            color: var(--ac); text-align: center; margin: 14px 0 5px;
+        .go-title { font-size: 16px; letter-spacing: 5px; text-transform: uppercase; color: var(--ac); text-align: center; margin: 14px 0 5px; }
+        .go-sub { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.25); text-align: center; margin-bottom: 28px; }
+
+        /* Maze Styles */
+        .maze-cell { position: relative; background: rgba(255,255,255,0.02); }
+        .maze-wall-n { border-top: 2px solid var(--ac); }
+        .maze-wall-e { border-right: 2px solid var(--ac); }
+        .maze-wall-s { border-bottom: 2px solid var(--ac); }
+        .maze-wall-w { border-left: 2px solid var(--ac); }
+        .maze-ball {
+            position: absolute; top: 15%; left: 15%; width: 70%; height: 70%;
+            background: var(--ac); border-radius: 50%; box-shadow: 0 0 15px var(--ac);
+            pointer-events: none;
         }
-        .go-sub {
-            font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
-            color: rgba(255,255,255,0.25); text-align: center; margin-bottom: 28px;
-        }
+        .maze-end { position: absolute; top: 20%; left: 20%; width: 60%; height: 60%; background: rgba(68,255,120,0.5); border-radius: 50%; box-shadow: 0 0 10px rgba(68,255,120,0.5); pointer-events: none; }
     </style>
 </head>
 <body>
@@ -278,15 +114,13 @@
     <div id="gc"></div>
 
     <script type="module">
-        import { initializeApp }                          from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        /* ──────────────────────── PLAYER CONFIG */
         const PLAYER_NAME  = 'Paige';
         const IS_DM        = false;
         const GAME_PLAYERS = ['James','Lewis','Paige','Peter'];
 
-        /* ──────────────────────── FIREBASE */
         const FB = {
             apiKey:            "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
             authDomain:        "terracronus-dragonshard.firebaseapp.com",
@@ -302,37 +136,21 @@
         const VREF  = ref(db,'puzzle_game/votes');
         const RREF  = ref(db,'puzzle_game/ready');
 
-        /* ──────────────────────── SYMBOLS (8 arcane glyphs) */
         const S = [
-            { name:'The Ring',
-               svg:`<circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="9"/>
-                    <circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="9"/>` },
-            { name:'The Spiral',
-               svg:`<path d="M50,50 C53,46 60,44 64,49 C70,56 65,66 56,69 C44,74 30,65 28,52 C24,36 36,21 52,20 C70,18 84,33 84,50 C84,70 68,84 48,82" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>` },
-            { name:'The Crescent',
-               svg:`<path d="M50,12 A38,38 0 1,0 50,88 A27,27 0 1,1 50,12 Z" fill="currentColor"/>` },
-            { name:'The Bolt',
-               svg:`<path d="M60,8 L32,50 L51,50 L40,92 L72,46 L53,46 Z" fill="currentColor"/>` },
-            { name:'The Eye',
-               svg:`<path d="M8,50 Q50,8 92,50 Q50,92 8,50 Z" fill="none" stroke="currentColor" stroke-width="9"/>
-                    <circle cx="50" cy="50" r="15" fill="currentColor"/>` },
-            { name:'The Flame',
-               svg:`<path d="M50,88 C23,73 17,51 30,35 C36,47 41,47 44,40 C49,25 52,10 57,22 C62,34 57,46 64,46 C70,30 73,18 73,32 C82,50 76,73 50,88 Z" fill="currentColor"/>` },
-            { name:'The Star',
-               svg:`<polygon points="50,8 61,36 92,36 68,55 77,85 50,67 23,85 32,55 8,36 39,36" fill="none" stroke="currentColor" stroke-width="7"/>` },
-            { name:'The Rune',
-               svg:`<line x1="50" y1="8"  x2="50" y2="92" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
-                    <line x1="14" y1="34" x2="86" y2="34" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
-                    <line x1="14" y1="60" x2="50" y2="60" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>` },
+            { name:'The Ring', svg:`<circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="9"/><circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="9"/>` },
+            { name:'The Spiral', svg:`<path d="M50,50 C53,46 60,44 64,49 C70,56 65,66 56,69 C44,74 30,65 28,52 C24,36 36,21 52,20 C70,18 84,33 84,50 C84,70 68,84 48,82" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>` },
+            { name:'The Crescent', svg:`<path d="M50,12 A38,38 0 1,0 50,88 A27,27 0 1,1 50,12 Z" fill="currentColor"/>` },
+            { name:'The Bolt', svg:`<path d="M60,8 L32,50 L51,50 L40,92 L72,46 L53,46 Z" fill="currentColor"/>` },
+            { name:'The Eye', svg:`<path d="M8,50 Q50,8 92,50 Q50,92 8,50 Z" fill="none" stroke="currentColor" stroke-width="9"/><circle cx="50" cy="50" r="15" fill="currentColor"/>` },
+            { name:'The Flame', svg:`<path d="M50,88 C23,73 17,51 30,35 C36,47 41,47 44,40 C49,25 52,10 57,22 C62,34 57,46 64,46 C70,30 73,18 73,32 C82,50 76,73 50,88 Z" fill="currentColor"/>` },
+            { name:'The Star', svg:`<polygon points="50,8 61,36 92,36 68,55 77,85 50,67 23,85 32,55 8,36 39,36" fill="none" stroke="currentColor" stroke-width="7"/>` },
+            { name:'The Rune', svg:`<line x1="50" y1="8"  x2="50" y2="92" stroke="currentColor" stroke-width="10" stroke-linecap="round"/><line x1="14" y1="34" x2="86" y2="34" stroke="currentColor" stroke-width="10" stroke-linecap="round"/><line x1="14" y1="60" x2="50" y2="60" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>` },
         ];
 
-        /* ──────────────────────── SEEDED RNG */
         function rng32(seed) {
             return function() {
-                seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-                let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-                t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+                seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+                t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296;
             };
         }
         function shuffle(arr, rng) {
@@ -343,29 +161,38 @@
         function getRound(seed, round) {
             const rng = rng32(((seed*997)+(round*101))>>>0);
             const sym = shuffle([0,1,2,3,4,5,6,7], rng);
-            const tgt = sym[0];
-            const nt  = sym.slice(1);
-            const po  = shuffle([...GAME_PLAYERS], rng32((seed*503)>>>0));
-            const desc= po[round];
-            const layouts={};
-            for(const p of GAME_PLAYERS){
-                if(p===desc){ layouts[p]=[tgt]; }
-                else{
-                    const sh=shuffle(nt,rng);
-                    layouts[p]=shuffle([tgt,sh[0],sh[1],sh[2]],rng);
-                }
-            }
+            const tgt = sym[0]; const nt = sym.slice(1);
+            const po = shuffle([...GAME_PLAYERS], rng32((seed*503)>>>0));
+            const desc = po[round]; const layouts={};
+            for(const p of GAME_PLAYERS){ layouts[p] = p===desc ? [tgt] : shuffle([tgt,nt[0],nt[1],nt[2]],rng); }
             return {tgt,desc,layouts};
         }
 
-        /* ──────────────────────── TIMING */
-        const CD_MS  = 3000;  // countdown
-        const RND_MS = 5000;  // round
+        // MAZE GEN
+        function getMaze(seed, round) {
+            const rng = rng32(((seed*1337)+(round*773))>>>0);
+            const w = 6, h = 6;
+            const grid = Array.from({length: h}, () => Array.from({length: w}, () => ({n:1,e:1,s:1,w:1,v:0})));
+            const stack = [{x:0, y:0}];
+            grid[0][0].v = 1;
+            while(stack.length > 0) {
+                const curr = stack[stack.length - 1];
+                const unvisited = [];
+                if(curr.y > 0 && !grid[curr.y-1][curr.x].v) unvisited.push({x:curr.x, y:curr.y-1, d:'n', op:'s'});
+                if(curr.x < w-1 && !grid[curr.y][curr.x+1].v) unvisited.push({x:curr.x+1, y:curr.y, d:'e', op:'w'});
+                if(curr.y < h-1 && !grid[curr.y+1][curr.x].v) unvisited.push({x:curr.x, y:curr.y+1, d:'s', op:'n'});
+                if(curr.x > 0 && !grid[curr.y][curr.x-1].v) unvisited.push({x:curr.x-1, y:curr.y, d:'w', op:'e'});
+                if(unvisited.length > 0) {
+                    const next = unvisited[Math.floor(rng() * unvisited.length)];
+                    grid[curr.y][curr.x][next.d] = 0; grid[next.y][next.x][next.op] = 0; grid[next.y][next.x].v = 1;
+                    stack.push({x:next.x, y:next.y});
+                } else { stack.pop(); }
+            }
+            return grid;
+        }
 
-        /* ──────────────────────── STATE */
-        let GS        = null;
-        let prevPhase = null;
-        let rndTimer  = null;
+        let GS = null; let prevPhase = null; let rndTimer = null; let currentP2State = null;
+        let p2maze = null; let px = 0, py = 0; let isDraggingP2 = false;
         const gc = document.getElementById('gc');
 
         onValue(GREF, snap => {
@@ -379,13 +206,91 @@
         function clearRT() { if(rndTimer){clearTimeout(rndTimer);rndTimer=null;} }
 
         /* ──────────────────────── GLOBAL EXPORTS */
-        // Expose functions to the window so inline onclick handlers can reach them
-        window.selPuzzle = selPuzzle;
-        window.cancelGame = cancelGame;
-        window.tapRdy = tapRdy;
-        window.castVote = castVote;
-        window.advance = advance;
-        window.reset = reset;
+        window.selPuzzle = async n => {
+            await set(GREF,{ phase:'select', puzzle:n, gameSeed:((Math.random()*999983|0)+1), ready:{}, round:0, teamScore:0, votes:{}, mazeTimes:{}, phaseStart:Date.now() });
+        };
+        window.cancelGame = async () => await set(GREF,{phase:'idle'});
+        window.tapRdy = async () => await update(RREF,{[PLAYER_NAME]:true});
+        window.castVote = async sid => {
+            if(!GS||GS.phase!=='round_active') return;
+            if(GS.votes?.[PLAYER_NAME]!==undefined) return;
+            await update(VREF,{[PLAYER_NAME]:sid});
+        };
+        window.advance = async () => {
+            const round = GS?.round || 0;
+            const maxRounds = GS?.puzzle === 2 ? 3 : 4;
+            if(round >= maxRounds - 1) {
+                await update(GREF,{phase:'game_over',phaseStart:Date.now()});
+            } else {
+                const updates = { phase:'countdown', round:round+1, phaseStart:Date.now() };
+                if(GS?.puzzle === 1) updates.votes = {};
+                else if(GS?.puzzle === 2) { updates.mazeTimes = {}; updates.mazeFirstFinish = null; }
+                await update(GREF, updates);
+            }
+        };
+        window.reset = async () => await set(GREF,{phase:'idle'});
+
+        window.tryMoveEvent = function(e) {
+            if(GS?.mazeTimes?.[PLAYER_NAME]) return;
+            const touch = (e.touches && e.touches.length > 0) ? e.touches[0] : e;
+            const el = document.elementFromPoint(touch.clientX, touch.clientY);
+            if(!el) return;
+            const cell = el.closest('.maze-cell');
+            if(cell && cell.dataset.x !== undefined) {
+                tryMoveP2(parseInt(cell.dataset.x), parseInt(cell.dataset.y));
+            }
+        };
+
+        window.initMazeEvents = function() {
+            const grid = document.getElementById('maze-grid');
+            if(!grid) return;
+            grid.addEventListener('touchstart', e => { e.preventDefault(); isDraggingP2=true; window.tryMoveEvent(e); }, {passive: false});
+            grid.addEventListener('touchmove', e => { e.preventDefault(); if(isDraggingP2) window.tryMoveEvent(e); }, {passive: false});
+            grid.addEventListener('touchend', e => { isDraggingP2=false; });
+            grid.addEventListener('mousedown', e => { isDraggingP2=true; window.tryMoveEvent(e); });
+            grid.addEventListener('mousemove', e => { if(isDraggingP2) window.tryMoveEvent(e); });
+            window.addEventListener('mouseup', e => { isDraggingP2=false; });
+        };
+
+        function tryMoveP2(tx, ty) {
+            if(!p2maze) return;
+            const dx = tx - px; const dy = ty - py;
+            if(Math.abs(dx) + Math.abs(dy) !== 1) return;
+            const curr = p2maze[py][px];
+            if(dx === 1 && curr.e) return;
+            if(dx === -1 && curr.w) return;
+            if(dy === 1 && curr.s) return;
+            if(dy === -1 && curr.n) return;
+
+            px = tx; py = ty;
+            renderMazeBalls();
+
+            if(px === 5 && py === 5) {
+                submitMazeFinish();
+            }
+        }
+
+        async function submitMazeFinish() {
+            if(GS.mazeTimes?.[PLAYER_NAME]) return;
+            const updates = {};
+            updates[`mazeTimes/${PLAYER_NAME}`] = Date.now();
+            if(!GS.mazeFirstFinish) updates['mazeFirstFinish'] = Date.now();
+            await update(GREF, updates);
+        }
+
+        function renderMazeBalls() {
+            for(let y=0; y<6; y++) {
+                for(let x=0; x<6; x++) {
+                    const cell = document.querySelector(`.maze-cell[data-x="${x}"][data-y="${y}"]`);
+                    if(!cell) continue;
+                    const ball = cell.querySelector('.maze-ball');
+                    if(ball && (x !== px || y !== py)) cell.removeChild(ball);
+                    if(x === px && y === py && !ball) {
+                        const nb = document.createElement('div'); nb.className = 'maze-ball'; cell.appendChild(nb);
+                    }
+                }
+            }
+        }
 
         /* ──────────────────────── RENDER */
         function render(s,changed) {
@@ -393,292 +298,175 @@
                 case 'idle':         rIdle();          break;
                 case 'select':       rSelect(s);       break;
                 case 'countdown':    rCD(s);           break;
-                case 'round_active': rRound(s,changed);break;
-                case 'round_reveal': rReveal(s);       break;
-                case 'game_over':    rOver(s);         break;
+                case 'round_active': if(s.puzzle===2) rRoundP2(s,changed); else rRoundP1(s,changed); break;
+                case 'round_reveal': if(s.puzzle===2) rRevealP2(s); else rRevealP1(s); break;
+                case 'game_over':    if(s.puzzle===2) rOverP2(s); else rOverP1(s); break;
                 default:             rIdle();
             }
         }
 
-        /* ── IDLE ── */
         function rIdle() {
             if(IS_DM) {
                 gc.innerHTML=`
                 <div style="text-align:center;max-width:300px">
                   <p class="ph-title" style="margin-bottom:28px">Choose a Trial</p>
                   <div class="pz-grid">
-                    <button class="pz-card" onclick="selPuzzle(1)">
-                      <div class="pz-name">Symbol Cipher</div>
-                      <div class="pz-desc">Describe the unseen rune</div>
-                    </button>
-                    <button class="pz-card locked" disabled>
-                      <div class="pz-name">Trial II</div>
-                      <div class="pz-desc">Coming soon</div>
-                    </button>
-                    <button class="pz-card locked" disabled>
-                      <div class="pz-name">Trial III</div>
-                      <div class="pz-desc">Coming soon</div>
-                    </button>
+                    <button class="pz-card" onclick="selPuzzle(1)"><div class="pz-name">Symbol Cipher</div><div class="pz-desc">Describe the unseen rune</div></button>
+                    <button class="pz-card" onclick="selPuzzle(2)"><div class="pz-name">The Labyrinth</div><div class="pz-desc">Navigate in perfect sync</div></button>
+                    <button class="pz-card locked" disabled><div class="pz-name">Trial III</div><div class="pz-desc">Coming soon</div></button>
                   </div>
                 </div>`;
-            } else {
-                gc.innerHTML=`
-                <div style="text-align:center">
-                  <div class="w-glyph">◈</div>
-                  <p class="w-text">Awaiting the DM&rsquo;s trial&hellip;</p>
-                </div>`;
-            }
+            } else { gc.innerHTML=`<div style="text-align:center"><div class="w-glyph">◈</div><p class="w-text">Awaiting the DM&rsquo;s trial&hellip;</p></div>`; }
         }
 
-        async function selPuzzle(n) {
-            await set(GREF,{
-                phase:'select', puzzle:n,
-                gameSeed:((Math.random()*999983|0)+1),
-                ready:{}, round:0, teamScore:0, votes:{},
-                phaseStart:Date.now()
-            });
-        }
-
-        /* ── SELECT / READY ── */
         function rSelect(s) {
-            const rdy   = s.ready||{};
-            const allOk = GAME_PLAYERS.every(p=>rdy[p]);
-            const meOk  = rdy[PLAYER_NAME];
-            const rows  = GAME_PLAYERS.map(p=>`
-              <div class="rdy-row ${rdy[p]?'yes':''}">
-                <span class="rname">${p}</span>
-                <span class="rstatus">${rdy[p]?'✓ Ready':'···'}</span>
-              </div>`).join('');
-
+            const rdy = s.ready||{}; const allOk = GAME_PLAYERS.every(p=>rdy[p]); const meOk = rdy[PLAYER_NAME];
+            const rows = GAME_PLAYERS.map(p=>`<div class="rdy-row ${rdy[p]?'yes':''}"><span>${p}</span><span>${rdy[p]?'✓ Ready':'···'}</span></div>`).join('');
+            const title = s.puzzle === 1 ? 'Symbol Cipher' : 'The Labyrinth';
+            const sub = s.puzzle === 1 ? 'A trial of communication awaits' : 'Move as one or fall together';
             if(IS_DM) {
-                gc.innerHTML=`
-                <div style="text-align:center;max-width:280px">
-                  <p class="ph-title">Symbol Cipher</p>
-                  <p class="ph-sub">Awaiting adventurers</p>
-                  <div class="rdy-list">${rows}</div>
-                  <button class="btn-cancel" onclick="cancelGame()">✕ Cancel Trial</button>
-                </div>`;
+                gc.innerHTML=`<div style="text-align:center;max-width:280px"><p class="ph-title">${title}</p><p class="ph-sub">Awaiting adventurers</p><div class="rdy-list">${rows}</div><button class="btn-cancel" onclick="cancelGame()">✕ Cancel Trial</button></div>`;
             } else {
-                gc.innerHTML=`
-                <div style="text-align:center;max-width:280px">
-                  <p class="ph-title">Symbol Cipher</p>
-                  <p class="ph-sub">A trial of communication awaits</p>
-                  <button class="btn-rdy ${meOk?'confirmed':''}"
-                    onclick="tapRdy()" ${meOk?'disabled':''}>
-                    ${meOk?'✓ Ready':'Ready?'}
-                  </button>
-                  <div class="rdy-list">${rows}</div>
-                </div>`;
+                gc.innerHTML=`<div style="text-align:center;max-width:280px"><p class="ph-title">${title}</p><p class="ph-sub">${sub}</p><button class="btn-rdy ${meOk?'confirmed':''}" onclick="tapRdy()" ${meOk?'disabled':''}>${meOk?'✓ Ready':'Ready?'}</button><div class="rdy-list">${rows}</div></div>`;
             }
-
-            if(allOk && IS_DM) {
-                setTimeout(()=>{
-                    if(GS?.phase==='select')
-                        update(GREF,{phase:'countdown',phaseStart:Date.now()});
-                },700);
-            }
+            if(allOk && IS_DM) { setTimeout(()=>{ if(GS?.phase==='select') update(GREF,{phase:'countdown',phaseStart:Date.now()}); },700); }
         }
 
-        async function tapRdy() { await update(RREF,{[PLAYER_NAME]:true}); }
-        async function cancelGame() { await set(GREF,{phase:'idle'}); }
-
-        /* ── COUNTDOWN ── */
         function rCD(s) {
             const tick=()=>{
-                const el=Date.now()-s.phaseStart;
-                const tl=Math.max(0,CD_MS-el);
-                const n =tl>0?Math.ceil(tl/1000):'GO!';
-                gc.innerHTML=`
-                <div style="text-align:center">
-                  <div class="cnt-num" id="cn">${n}</div>
-                  <div class="cnt-label">Prepare yourselves</div>
-                </div>`;
-                if(tl<=0) {
-                    if(IS_DM && GS?.phase==='countdown')
-                        update(GREF,{phase:'round_active',phaseStart:Date.now(),votes:{}});
-                } else {
-                    setTimeout(tick,90);
-                }
+                const tl = Math.max(0, CD_MS - (Date.now() - s.phaseStart));
+                gc.innerHTML=`<div style="text-align:center"><div class="cnt-num">${tl>0?Math.ceil(tl/1000):'GO!'}</div><div class="cnt-label">Prepare yourselves</div></div>`;
+                if(tl<=0) { if(IS_DM && GS?.phase==='countdown') update(GREF,{phase:'round_active',phaseStart:Date.now(),votes:{}}); }
+                else setTimeout(tick,90);
             };
             tick();
         }
 
-        /* ── ROUND ACTIVE ── */
-        function rRound(s,changed) {
-            const round  = s.round||0;
-            const {tgt,desc,layouts} = getRound(s.gameSeed,round);
-            const votes  = s.votes||{};
-            const myVote = votes[PLAYER_NAME];
-            const amDesc = (PLAYER_NAME===desc);
-            const elapsed= Date.now()-s.phaseStart;
-            const tl     = Math.max(0,RND_MS-elapsed);
+        /* ── PUZZLE 1: CIPHER ── */
+        function rRoundP1(s,changed) {
+            const round = s.round||0; const {tgt,desc,layouts} = getRound(s.gameSeed,round);
+            const votes = s.votes||{}; const amDesc = (PLAYER_NAME===desc); const tl = Math.max(0, RND_MS - (Date.now()-s.phaseStart));
 
             if(IS_DM) {
-                // DM sees overview
-                gc.innerHTML=`
-                <div class="dm-box">
-                  <p class="rnd-bar">Round ${round+1} of 4</p>
-                  <div class="dm-sec" id="ds">${Math.ceil(tl/1000)}</div>
-                  <p class="dm-desc-lbl">${desc} is describing</p>
-                  <div class="dm-vlist">
-                    ${GAME_PLAYERS.filter(p=>p!==desc).map(p=>`
-                      <div class="dm-vrow ${votes[p]!==undefined?'voted':''}">
-                        <span>${p}</span>
-                        <span>${votes[p]!==undefined?'✓ Voted':'···'}</span>
-                      </div>`).join('')}
-                  </div>
-                  <div class="timer-wrap" style="margin-top:6px">
-                    <div class="timer-track">
-                      <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/RND_MS)*100}%"></div>
-                    </div>
-                  </div>
-                </div>`;
+                gc.innerHTML=`<div class="dm-box"><p class="rnd-bar">Round ${round+1} of 4</p><div class="dm-sec" id="ds">${Math.ceil(tl/1000)}</div><p class="dm-desc-lbl">${desc} is describing</p><div class="dm-vlist">${GAME_PLAYERS.filter(p=>p!==desc).map(p=>`<div class="dm-vrow ${votes[p]!==undefined?'voted':''}"><span>${p}</span><span>${votes[p]!==undefined?'✓ Voted':'···'}</span></div>`).join('')}</div><div class="timer-wrap" style="margin-top:6px"><div class="timer-track"><div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/RND_MS)*100}%"></div></div></div></div>`;
             } else if(amDesc) {
-                gc.innerHTML=`
-                <div style="text-align:center;max-width:290px">
-                  <p class="rnd-bar">Round ${round+1} of 4</p>
-                  <span class="role-badge role-desc">You are describing</span>
-                  <div class="sym-lg">
-                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                      ${S[tgt].svg}
-                    </svg>
-                  </div>
-                  <p class="desc-instr">Describe this to your party!</p>
-                  <div class="timer-wrap">
-                    <div class="timer-track">
-                      <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/RND_MS)*100}%"></div>
-                    </div>
-                    <div class="timer-sec" id="ts">${Math.ceil(tl/1000)}</div>
-                  </div>
-                </div>`;
+                gc.innerHTML=`<div style="text-align:center;max-width:290px"><p class="rnd-bar">Round ${round+1} of 4</p><span class="role-badge role-desc">You are describing</span><div class="sym-lg"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${S[tgt].svg}</svg></div><p class="desc-instr">Describe this to your party!</p><div class="timer-wrap"><div class="timer-track"><div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/RND_MS)*100}%"></div></div><div class="timer-sec" id="ts">${Math.ceil(tl/1000)}</div></div></div>`;
             } else {
-                const hand = layouts[PLAYER_NAME]||[];
-                gc.innerHTML=`
-                <div style="text-align:center;max-width:290px">
-                  <p class="rnd-bar">Round ${round+1} of 4</p>
-                  <span class="role-badge role-guess">${desc} is describing&hellip;</span>
-                  <div class="sym-grid">
-                    ${hand.map(sid=>`
-                      <button class="sym-btn ${myVote===sid?'selected':''}"
-                        onclick="castVote(${sid})"
-                        ${myVote!==undefined?'disabled':''}>
-                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                          ${S[sid].svg}
-                        </svg>
-                      </button>`).join('')}
-                  </div>
-                  <div class="timer-wrap">
-                    <div class="timer-track">
-                      <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/RND_MS)*100}%"></div>
-                    </div>
-                    <div class="timer-sec" id="ts">${Math.ceil(tl/1000)}</div>
-                  </div>
-                </div>`;
+                gc.innerHTML=`<div style="text-align:center;max-width:290px"><p class="rnd-bar">Round ${round+1} of 4</p><span class="role-badge role-guess">${desc} is describing&hellip;</span><div class="sym-grid">${(layouts[PLAYER_NAME]||[]).map(sid=>`<button class="sym-btn ${votes[PLAYER_NAME]===sid?'selected':''}" onclick="castVote(${sid})" ${votes[PLAYER_NAME]!==undefined?'disabled':''}><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${S[sid].svg}</svg></button>`).join('')}</div><div class="timer-wrap"><div class="timer-track"><div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/RND_MS)*100}%"></div></div><div class="timer-sec" id="ts">${Math.ceil(tl/1000)}</div></div></div>`;
             }
 
-            // Start or resume the live timer only on phase entry
             if(changed || rndTimer===null) {
                 clearRT();
                 rndTimer = setInterval(()=>{
-                    const el2=Date.now()-GS.phaseStart;
-                    const tl2=Math.max(0,RND_MS-el2);
-                    const bar=document.getElementById('tb');
-                    const sec=document.getElementById('ts')||document.getElementById('ds');
+                    const tl2 = Math.max(0, RND_MS - (Date.now()-GS.phaseStart));
+                    const bar=document.getElementById('tb'); const sec=document.getElementById('ts')||document.getElementById('ds');
                     if(bar){bar.style.width=(tl2/RND_MS)*100+'%';bar.classList.toggle('urgent',tl2<2000);}
                     if(sec) sec.textContent=Math.ceil(tl2/1000);
-                    if(tl2<=0){
-                        clearRT();
-                        if(IS_DM) endRound();
-                    }
+                    if(tl2<=0){ clearRT(); if(IS_DM) {
+                        const score=(GS.teamScore||0)+(GAME_PLAYERS.filter(p=>p!==desc&&GS.votes?.[p]===tgt).length > GAME_PLAYERS.length/2 ? 1 : 0);
+                        update(GREF,{phase:'round_reveal',phaseStart:Date.now(),teamScore:score});
+                    }}
                 },80);
             }
         }
 
-        async function castVote(sid) {
-            if(!GS||GS.phase!=='round_active') return;
-            if(GS.votes?.[PLAYER_NAME]!==undefined) return;
-            await update(VREF,{[PLAYER_NAME]:sid});
-        }
-
-        function endRound() {
-            if(GS?.phase!=='round_active') return;
-            const round=GS.round||0;
-            const {tgt,desc}=getRound(GS.gameSeed,round);
-            const votes=GS.votes||{};
+        function rRevealP1(s) {
+            const {tgt,desc}=getRound(s.gameSeed,s.round||0); const votes=s.votes||{};
             const guessers=GAME_PLAYERS.filter(p=>p!==desc);
-            const correct=guessers.filter(p=>votes[p]===tgt).length;
-            const majority=correct>guessers.length/2;
-            const score=(GS.teamScore||0)+(majority?1:0);
-            update(GREF,{phase:'round_reveal',phaseStart:Date.now(),teamScore:score});
+            const majority=(guessers.filter(p=>votes[p]===tgt).length > guessers.length/2);
+            gc.innerHTML=`<div style="text-align:center;max-width:290px"><p class="rnd-bar">Round ${(s.round||0)+1} — The symbol was&hellip;</p><div class="rv-sym"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${S[tgt].svg}</svg></div><p class="ph-title" style="margin-bottom:6px">${S[tgt].name}</p><div class="rv-outcome ${majority?'win':'lose'}">${majority?'Success':'Failed'}</div><div class="rv-rows">${guessers.map(p=>{ const ok=votes[p]===tgt; return `<div class="rv-row ${ok?'ok':'bad'}"><span>${p}</span><span>${ok?'✓ Correct':(votes[p]!==undefined?'✗ Wrong':'✗ No answer')}</span></div>`; }).join('')}</div><p class="score-line">Score: ${s.teamScore} / ${(s.round||0)+1}</p>${IS_DM?`<button class="btn-action" onclick="advance()">${(s.round||0)>=3?'Final Scores &rarr;':'Next Round &rarr;'}</button>`:`<p class="w-text" style="font-size:11px;letter-spacing:2px">Waiting for DM&hellip;</p>`}</div>`;
         }
 
-        /* ── ROUND REVEAL ── */
-        function rReveal(s) {
-            const round=s.round||0;
-            const {tgt,desc}=getRound(s.gameSeed,round);
-            const votes=s.votes||{};
-            const guessers=GAME_PLAYERS.filter(p=>p!==desc);
-            const correct=guessers.filter(p=>votes[p]===tgt).length;
-            const majority=correct>guessers.length/2;
-            const last=round>=3;
-
-            const rows=guessers.map(p=>{
-                const ok=votes[p]===tgt;
-                return `<div class="rv-row ${ok?'ok':'bad'}">
-                  <span>${p}</span>
-                  <span>${ok?'✓ Correct':(votes[p]!==undefined?'✗ Wrong':'✗ No answer')}</span>
-                </div>`;
-            }).join('');
-
-            gc.innerHTML=`
-            <div style="text-align:center;max-width:290px">
-              <p class="rnd-bar">Round ${round+1} — The symbol was&hellip;</p>
-              <div class="rv-sym">
-                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${S[tgt].svg}</svg>
-              </div>
-              <p class="ph-title" style="margin-bottom:6px">${S[tgt].name}</p>
-              <div class="rv-outcome ${majority?'win':'lose'}">${majority?'Success':'Failed'}</div>
-              <div class="rv-rows">${rows}</div>
-              <p class="score-line">Score: ${s.teamScore} / ${round+1}</p>
-              ${IS_DM
-                ?`<button class="btn-action" onclick="advance()">${last?'Final Scores &rarr;':'Next Round &rarr;'}</button>`
-                :`<p class="w-text" style="font-size:11px;letter-spacing:2px">Waiting for DM&hellip;</p>`
-              }
-            </div>`;
+        function rOverP1(s) {
+            const score=s.teamScore||0; const [,title,sub]=[[4,'Perfect Cipher!','Your bonds are unbreakable'],[3,'Strong Bond','Your communication shines'],[2,'Partial Success','Some signals were lost'],[1,'Struggling','The cipher proved difficult'],[0,'Cipher Failed','The darkness claims this trial']].find(([m])=>score>=m);
+            gc.innerHTML=`<div style="text-align:center;max-width:280px"><p class="go-head">Trial Complete</p><div class="go-score">${score}<span class="go-max"> / 4</span></div><p class="go-title">${title}</p><p class="go-sub">${sub}</p>${IS_DM?`<button class="btn-action" onclick="reset()">Play Again</button>`:''}</div>`;
         }
 
-        async function advance() {
-            const round=GS?.round||0;
-            if(round>=3) {
-                await update(GREF,{phase:'game_over',phaseStart:Date.now()});
-            } else {
-                await update(GREF,{phase:'countdown',round:round+1,phaseStart:Date.now(),votes:{}});
+        /* ── PUCTURE 2: THE LABYRINTH ── */
+        function rRoundP2(s, changed) {
+            const round = s.round || 0;
+            const first = s.mazeFirstFinish;
+
+            if (changed) {
+                if (IS_DM) {
+                    gc.innerHTML = `<div class="dm-box"><p class="rnd-bar">Round ${round+1} of 3</p><div class="dm-sec" id="ds"></div><p class="dm-desc-lbl">Players navigating...</p><div class="dm-vlist" id="pl-list"></div></div>`;
+                } else {
+                    gc.innerHTML = `<div style="text-align:center;max-width:320px;width:100%"><p class="rnd-bar">Round ${round+1} of 3</p><div class="timer-wrap" style="margin-bottom:12px"><div class="timer-track"><div class="timer-fill" id="tb"></div></div><div class="timer-sec" id="ts"></div></div><div id="mz-container"><div id="maze-grid" style="display:grid; grid-template-columns: repeat(6, 1fr); width: 260px; height: 260px; margin: 0 auto; touch-action: none; background: rgba(0,0,0,0.5);"></div></div></div>`;
+                    px = 0; py = 0; p2maze = getMaze(s.gameSeed, round);
+                    const grid = document.getElementById('maze-grid');
+                    for(let y=0; y<6; y++) {
+                        for(let x=0; x<6; x++) {
+                            const c = p2maze[y][x]; let cls = 'maze-cell';
+                            if(c.n) cls+=' maze-wall-n'; if(c.e) cls+=' maze-wall-e'; if(c.s) cls+=' maze-wall-s'; if(c.w) cls+=' maze-wall-w';
+                            grid.innerHTML += `<div class="${cls}" data-x="${x}" data-y="${y}">${(x===5&&y===5)?'<div class="maze-end"></div>':''}</div>`;
+                        }
+                    }
+                    renderMazeBalls(); window.initMazeEvents();
+                }
+                clearRT(); rndTimer = setInterval(() => tickP2(currentP2State), 50);
             }
+
+            if (IS_DM) {
+                const plist = document.getElementById('pl-list');
+                if (plist) plist.innerHTML = GAME_PLAYERS.map(p => {
+                    const t = s.mazeTimes?.[p]; const diff = (t && first) ? `+${((t-first)/1000).toFixed(1)}s` : '';
+                    return `<div class="dm-vrow ${t?'voted':''}"><span>${p}</span><span style="${t?'color:#44ff78':''}">${t ? `✓ Finished ${diff}` : 'Navigating...'}</span></div>`;
+                }).join('');
+            } else {
+                const meFin = s.mazeTimes?.[PLAYER_NAME]; const cont = document.getElementById('mz-container');
+                if (meFin && cont && !cont.dataset.done) {
+                    cont.dataset.done = "1";
+                    cont.innerHTML = `<div style="margin-top:40px"><div class="w-glyph">◈</div><p class="w-text" style="color:#44ff78">Maze Complete!</p><p class="w-text" style="margin-top:10px;font-size:10px;color:var(--ac)">Waiting for sync...</p></div>`;
+                }
+            }
+            currentP2State = s;
         }
 
-        /* ── GAME OVER ── */
-        function rOver(s) {
-            const score=s.teamScore||0;
-            const tiers=[
-                [4,'Perfect Cipher!','Your bonds are unbreakable'],
-                [3,'Strong Bond',    'Your communication shines'],
-                [2,'Partial Success','Some signals were lost'],
-                [1,'Struggling',     'The cipher proved difficult'],
-                [0,'Cipher Failed',  'The darkness claims this trial'],
-            ];
-            const [,title,sub]=tiers.find(([m])=>score>=m);
-            gc.innerHTML=`
-            <div style="text-align:center;max-width:280px">
-              <p class="go-head">Trial Complete</p>
-              <div class="go-score">${score}<span class="go-max"> / 4</span></div>
-              <p class="go-title">${title}</p>
-              <p class="go-sub">${sub}</p>
-              ${IS_DM?`<button class=\"btn-action\" onclick=\"reset()\">Play Again</button>`:''}
-            </div>`;
+        function tickP2(s) {
+            if (!s) return;
+            const RND_MS = 60000; const SYNC_MS = 3000; let isPanic = false;
+            let tl = Math.max(0, RND_MS - (Date.now() - s.phaseStart));
+            if (s.mazeFirstFinish) { isPanic = true; tl = Math.min(tl, Math.max(0, SYNC_MS - (Date.now() - s.mazeFirstFinish))); }
+
+            const bar = document.getElementById('tb'); const sec = document.getElementById('ts') || document.getElementById('ds');
+            if (bar) { bar.style.width = (tl / (isPanic ? SYNC_MS : RND_MS)) * 100 + '%'; bar.className = 'timer-fill ' + (isPanic || tl < 5000 ? 'urgent' : ''); }
+            if (sec) { sec.textContent = (tl/1000).toFixed(isPanic || tl < 10000 ? 1 : 0); sec.style.color = isPanic ? '#ff4455' : 'var(--ac)'; }
+
+            if (tl <= 0) { clearRT(); if (IS_DM) endRoundP2(s); }
         }
 
-        async function reset() { await set(GREF,{phase:'idle'}); }
+        function endRoundP2(s) {
+            if (s.phase !== 'round_active') return;
+            const times = s.mazeTimes || {}; const first = s.mazeFirstFinish;
+            let success = !!first; let roundScore = 0;
+            if (success) { for (let p of GAME_PLAYERS) if (!times[p] || (times[p] - first) > 3100) success = false; }
+            if (success) {
+                for (let p of GAME_PLAYERS) { roundScore += Math.max(0, Math.floor(100 * (1 - (times[p] - first)/3000))); }
+            }
+            update(GREF, { phase: 'round_reveal', phaseStart: Date.now(), teamScore: (s.teamScore || 0) + roundScore, lastScore: roundScore, lastSuccess: success });
+        }
 
+        function rRevealP2(s) {
+            const round = s.round || 0; const times = s.mazeTimes || {}; const first = s.mazeFirstFinish;
+            const sorted = GAME_PLAYERS.slice().sort((a,b) => (times[a]||Infinity) - (times[b]||Infinity));
+            const rows = sorted.map((p, i) => {
+                if(!times[p]) return `<div class="rv-row bad"><span>${p}</span><span>Lost</span></div>`;
+                const diff = times[p] - first;
+                if(diff > 3100) return `<div class="rv-row bad"><span>${p}</span><span>Too Slow (+${(diff/1000).toFixed(1)}s)</span></div>`;
+                if(diff === 0) return `<div class="rv-row ok"><span>1. ${p}</span><span>First! (+100)</span></div>`;
+                return `<div class="rv-row ok"><span>${i+1}. ${p}</span><span>+${(diff/1000).toFixed(1)}s (+${Math.max(0, Math.floor(100 * (1 - diff/3000)))})</span></div>`;
+            }).join('');
+            gc.innerHTML=`<div style="text-align:center;max-width:290px"><p class="rnd-bar">Maze ${round+1} Complete</p><div class="rv-outcome ${s.lastSuccess?'win':'lose'}">${s.lastSuccess?'Perfect Sync':'Sync Broken'}</div><p class="ph-title" style="margin-bottom:16px; font-size:16px">${s.lastSuccess?`+${s.lastScore} points`:'0 points'}</p><div class="rv-rows">${rows}</div><p class="score-line">Total Score: ${s.teamScore} / ${(round+1)*400}</p>${IS_DM?`<button class="btn-action" onclick="advance()">${round>=2?'Final Scores &rarr;':'Next Maze &rarr;'}</button>`:`<p class="w-text" style="font-size:11px;letter-spacing:2px">Waiting for DM&hellip;</p>`}</div>`;
+        }
+
+        function rOverP2(s) {
+            const score=s.teamScore||0; let title, sub;
+            if(score >= 1000) { title = 'Mind Meld'; sub = 'Perfect synchronization'; }
+            else if(score >= 700) { title = 'United Front'; sub = 'Strong teamwork'; }
+            else if(score >= 300) { title = 'Fractured Sync'; sub = 'Some signals lost'; }
+            else { title = 'Lost in the Dark'; sub = 'The maze claims another team'; }
+            gc.innerHTML=`<div style="text-align:center;max-width:280px"><p class="go-head">Trial Complete</p><div class="go-score">${score}<span class="go-max"> / 1200</span></div><p class="go-title">${title}</p><p class="go-sub">${sub}</p>${IS_DM?`<button class="btn-action" onclick="reset()">Play Again</button>`:''}</div>`;
+        }
     </script>
 </body>
 </html>
