@@ -116,27 +116,6 @@
             letter-spacing: 2px; text-transform: uppercase;
             cursor: pointer; margin-top: 20px;
         }
-        /* Strike Button for Puzzle 2 */
-        .btn-strike {
-            width: 180px; height: 180px; border-radius: 50%;
-            background: rgba(5,5,18,0.8);
-            border: 4px solid var(--ac); color: var(--ac);
-            font-size: 24px; letter-spacing: 5px; text-transform: uppercase;
-            font-family: serif; cursor: pointer; transition: all 0.2s ease;
-            box-shadow: 0 0 20px rgba(var(--ar),var(--ag),var(--ab),0.3);
-            margin: 30px auto; display: flex; align-items: center; justify-content: center;
-        }
-        .btn-strike:active {
-            transform: scale(0.92);
-            box-shadow: 0 0 40px var(--ac);
-            background: rgba(var(--ar),var(--ag),var(--ab),0.2);
-        }
-        .btn-strike.confirmed {
-            background: rgba(68,255,120,0.15);
-            border-color: #44ff78; color: #44ff78;
-            box-shadow: 0 0 30px rgba(68,255,120,0.3);
-            cursor: default; transform: none;
-        }
         /* Countdown */
         .cnt-num {
             font-size: 110px; font-weight: bold; line-height: 1;
@@ -238,6 +217,45 @@
             background: rgba(var(--ar),var(--ag),var(--ab),0.1);
             color: var(--ac);
         }
+        /* Sync puzzle */
+        .sync-box {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 12px; width: 290px; text-align: center;
+        }
+        .sync-btn {
+            width: 220px; padding: 26px 14px;
+            font-size: 17px; letter-spacing: 4px; text-transform: uppercase;
+            font-family: serif; cursor: pointer;
+            background: rgba(5,5,18,0.85);
+            border: 2px solid var(--ac); color: var(--ac);
+            border-radius: 12px; transition: all 0.25s ease;
+        }
+        .sync-btn:active {
+            background: rgba(var(--ar),var(--ag),var(--ab),0.18);
+            box-shadow: 0 0 20px rgba(var(--ar),var(--ag),var(--ab),0.35);
+            transform: scale(0.98);
+        }
+        .sync-btn.locked,
+        .sync-btn:disabled {
+            background: rgba(68,255,120,0.12);
+            border-color: #44ff78; color: #44ff78;
+            box-shadow: 0 0 22px rgba(68,255,120,0.25);
+            cursor: default; transform: none;
+        }
+        .sync-note {
+            font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+            min-height: 28px;
+        }
+        .sync-stats {
+            display: flex; flex-direction: column; gap: 7px; width: 240px;
+        }
+        .sync-stat {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; background: rgba(255,255,255,0.04); border-radius: 6px;
+            font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+            color: rgba(255,255,255,0.42);
+        }
         /* Reveal */
         .rv-sym {
             width: 110px; height: 110px; margin: 0 auto 12px;
@@ -259,7 +277,7 @@
         .rv-row.bad { background: rgba(255,68,85,0.08);  border: 1px solid rgba(255,68,85,0.22); color: #ff6677; }
         .score-line {
             font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
-            color: rgba(255,255,255,0.3); text-align: center; margin-bottom: 20px;
+            color: rgba(255,255,255,0.3); text-align: center; margin-bottom: 10px;
         }
         /* Buttons */
         .btn-action {
@@ -290,7 +308,7 @@
         }
         .go-sub {
             font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
-            color: rgba(255,255,255,0.25); text-align: center; margin-bottom: 28px;
+            color: rgba(255,255,255,0.25); text-align: center; margin-bottom: 12px;
         }
     </style>
 </head>
@@ -299,7 +317,7 @@
     <div id="gc"></div>
 
     <script type="module">
-        import { initializeApp }                          from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         /* ──────────────────────── PLAYER CONFIG */
@@ -322,6 +340,33 @@
         const GREF  = ref(db,'puzzle_game');
         const VREF  = ref(db,'puzzle_game/votes');
         const RREF  = ref(db,'puzzle_game/ready');
+        const PREF  = ref(db,'puzzle_game/presses');
+
+        /* ──────────────────────── PUZZLES */
+        const PUZZLES = {
+            1: {
+                name: 'Symbol Cipher',
+                desc: 'Describe the unseen rune',
+                readySub: 'A trial of communication awaits',
+                dmSub: 'Awaiting adventurers',
+                rounds: 4,
+                countdown: 'Prepare yourselves'
+            },
+            2: {
+                name: 'Silent Sync',
+                desc: 'Press the seal as one',
+                readySub: 'A trial of timing awaits',
+                dmSub: 'Awaiting adventurers',
+                rounds: 3,
+                countdown: 'Silence. Breathe. Align.'
+            }
+        };
+        const metaFor = (id) => PUZZLES[id] || PUZZLES[1];
+        const phaseStartOf = (s) => typeof s?.phaseStart === 'number' ? s.phaseStart : Date.now();
+        const roundCountOf = (s) => metaFor(s?.puzzle).rounds;
+        const timerText = (ms, precise = false) => precise ? (ms / 1000).toFixed(ms < 1000 ? 2 : 1) : String(Math.ceil(ms / 1000));
+        const fmtMs = (ms) => `${(Math.max(0, ms) / 1000).toFixed(3)}s`;
+        const avg = (nums) => nums.length ? nums.reduce((a,b)=>a+b,0) / nums.length : 0;
 
         /* ──────────────────────── SYMBOLS (8 arcane glyphs) */
         const S = [
@@ -380,51 +425,46 @@
         }
 
         /* ──────────────────────── TIMING */
-        const CD_MS  = 3000;  // countdown
+        const CD_MS    = 3000;
+        const CIPHER_MS = 5000;
+        const SYNC_MS   = 10000;
 
         /* ──────────────────────── STATE */
-        let GS        = null;
-        let prevPhase = null;
-        let rndTimer  = null;
+        let GS               = null;
+        let prevPhase        = null;
+        let rndTimer         = null;
+        let autoStartPending = false;
         const gc = document.getElementById('gc');
 
         onValue(GREF, snap => {
             GS = snap.val() || {phase:'idle'};
             const changed = GS.phase !== prevPhase;
             if(changed && GS.phase !== 'round_active') clearRT();
+            if(GS.phase !== 'select') autoStartPending = false;
             prevPhase = GS.phase;
-
-            // Auto-advance P2 if everyone voted
-            if (IS_DM && GS.phase === 'round_active' && GS.puzzle === 2) {
-                const votes = GS.votes || {};
-                if (Object.keys(votes).length === GAME_PLAYERS.length) {
-                    endRound();
-                }
-            }
-
             render(GS, changed);
         });
 
-        function clearRT() { if(rndTimer){clearTimeout(rndTimer);rndTimer=null;} }
+        function clearRT() { if(rndTimer){ clearInterval(rndTimer); rndTimer = null; } }
 
         /* ──────────────────────── GLOBAL EXPORTS */
-        window.selPuzzle = selPuzzle;
+        window.selPuzzle  = selPuzzle;
         window.cancelGame = cancelGame;
-        window.tapRdy = tapRdy;
-        window.castVote = castVote;
-        window.castVoteP2 = castVoteP2;
-        window.advance = advance;
-        window.reset = reset;
+        window.tapRdy     = tapRdy;
+        window.castVote   = castVote;
+        window.tapSync    = tapSync;
+        window.advance    = advance;
+        window.reset      = reset;
 
         /* ──────────────────────── RENDER */
-        function render(s,changed) {
+        function render(s, changed) {
             switch(s.phase){
-                case 'idle':         rIdle();          break;
-                case 'select':       rSelect(s);       break;
-                case 'countdown':    rCD(s);           break;
-                case 'round_active': rRound(s,changed);break;
-                case 'round_reveal': rReveal(s);       break;
-                case 'game_over':    rOver(s);         break;
+                case 'idle':         rIdle(); break;
+                case 'select':       rSelect(s); break;
+                case 'countdown':    rCD(s); break;
+                case 'round_active': s.puzzle===2 ? rSyncRound(s, changed) : rCipherRound(s, changed); break;
+                case 'round_reveal': s.puzzle===2 ? rSyncReveal(s) : rCipherReveal(s); break;
+                case 'game_over':    s.puzzle===2 ? rSyncOver(s) : rCipherOver(s); break;
                 default:             rIdle();
             }
         }
@@ -442,7 +482,7 @@
                     </button>
                     <button class="pz-card" onclick="selPuzzle(2)">
                       <div class="pz-name">Silent Sync</div>
-                      <div class="pz-desc">Strike as one without speaking</div>
+                      <div class="pz-desc">Press the seal as one</div>
                     </button>
                     <button class="pz-card locked" disabled>
                       <div class="pz-name">Trial III</div>
@@ -460,42 +500,45 @@
         }
 
         async function selPuzzle(n) {
-            await set(GREF,{
-                phase:'select', puzzle:n,
-                gameSeed:((Math.random()*999983|0)+1),
-                ready:{}, round:0, teamScore:0, votes:{},
-                phaseStart:Date.now()
+            await set(GREF, {
+                phase: 'select',
+                puzzle: n,
+                gameSeed: ((Math.random()*999983|0)+1),
+                ready: {},
+                round: 0,
+                teamScore: 0,
+                roundScores: [],
+                votes: {},
+                presses: {},
+                phaseStart: serverTimestamp()
             });
         }
 
         /* ── SELECT / READY ── */
         function rSelect(s) {
-            const rdy   = s.ready||{};
-            const allOk = GAME_PLAYERS.every(p=>rdy[p]);
+            const meta  = metaFor(s.puzzle);
+            const rdy   = s.ready || {};
+            const allOk = GAME_PLAYERS.every(p => rdy[p]);
             const meOk  = rdy[PLAYER_NAME];
-            const rows  = GAME_PLAYERS.map(p=>`
+            const rows  = GAME_PLAYERS.map(p => `
               <div class="rdy-row ${rdy[p]?'yes':''}">
                 <span class="rname">${p}</span>
                 <span class="rstatus">${rdy[p]?'✓ Ready':'···'}</span>
               </div>`).join('');
 
-            const title = s.puzzle === 1 ? 'Symbol Cipher' : 'Silent Sync';
-            const subDM = s.puzzle === 1 ? 'Awaiting adventurers' : 'Awaiting the synched';
-            const subPl = s.puzzle === 1 ? 'A trial of communication awaits' : 'A trial of perfect timing';
-
             if(IS_DM) {
                 gc.innerHTML=`
                 <div style="text-align:center;max-width:280px">
-                  <p class="ph-title">${title}</p>
-                  <p class="ph-sub">${subDM}</p>
+                  <p class="ph-title">${meta.name}</p>
+                  <p class="ph-sub">${meta.dmSub}</p>
                   <div class="rdy-list">${rows}</div>
                   <button class="btn-cancel" onclick="cancelGame()">✕ Cancel Trial</button>
                 </div>`;
             } else {
                 gc.innerHTML=`
                 <div style="text-align:center;max-width:280px">
-                  <p class="ph-title">${title}</p>
-                  <p class="ph-sub">${subPl}</p>
+                  <p class="ph-title">${meta.name}</p>
+                  <p class="ph-sub">${meta.readySub}</p>
                   <button class="btn-rdy ${meOk?'confirmed':''}"
                     onclick="tapRdy()" ${meOk?'disabled':''}>
                     ${meOk?'✓ Ready':'Ready?'}
@@ -504,331 +547,405 @@
                 </div>`;
             }
 
-            if(allOk && IS_DM) {
-                setTimeout(()=>{
-                    if(GS?.phase==='select')
-                        update(GREF,{phase:'countdown',phaseStart:Date.now()});
-                },700);
+            if(allOk && IS_DM && !autoStartPending) {
+                autoStartPending = true;
+                setTimeout(() => {
+                    autoStartPending = false;
+                    if(GS?.phase === 'select') {
+                        update(GREF, { phase: 'countdown', phaseStart: serverTimestamp() });
+                    }
+                }, 700);
             }
         }
 
-        async function tapRdy() { await update(RREF,{[PLAYER_NAME]:true}); }
-        async function cancelGame() { await set(GREF,{phase:'idle'}); }
+        async function tapRdy() { await update(RREF, { [PLAYER_NAME]: true }); }
+        async function cancelGame() { await set(GREF, { phase: 'idle' }); }
 
         /* ── COUNTDOWN ── */
         function rCD(s) {
-            const tick=()=>{
-                const el=Date.now()-s.phaseStart;
-                const tl=Math.max(0,CD_MS-el);
-                const n =tl>0?Math.ceil(tl/1000):'GO!';
+            const meta = metaFor(s.puzzle);
+            const start = phaseStartOf(s);
+            const tick = () => {
+                const el = Date.now() - start;
+                const tl = Math.max(0, CD_MS - el);
+                const n  = tl > 0 ? Math.ceil(tl / 1000) : 'GO!';
                 gc.innerHTML=`
                 <div style="text-align:center">
                   <div class="cnt-num" id="cn">${n}</div>
-                  <div class="cnt-label">Prepare yourselves</div>
+                  <div class="cnt-label">${meta.countdown}</div>
                 </div>`;
-                if(tl<=0) {
-                    if(IS_DM && GS?.phase==='countdown')
-                        update(GREF,{phase:'round_active',phaseStart:Date.now(),votes:{}});
+                if(tl <= 0) {
+                    if(IS_DM && GS?.phase === 'countdown') {
+                        update(GREF, {
+                            phase: 'round_active',
+                            phaseStart: serverTimestamp(),
+                            votes: {},
+                            presses: {}
+                        });
+                    }
                 } else {
-                    setTimeout(tick,90);
+                    setTimeout(tick, 90);
                 }
             };
             tick();
         }
 
-        /* ── ROUND ACTIVE ── */
-        function rRound(s,changed) {
-            const round  = s.round||0;
-            const votes  = s.votes||{};
-            const myVote = votes[PLAYER_NAME];
-            const elapsed= Date.now()-s.phaseStart;
+        /* ── PUZZLE I : SYMBOL CIPHER ── */
+        function rCipherRound(s, changed) {
+            const round   = s.round || 0;
+            const start   = phaseStartOf(s);
+            const { tgt, desc, layouts } = getRound(s.gameSeed, round);
+            const votes   = s.votes || {};
+            const myVote  = votes[PLAYER_NAME];
+            const amDesc  = PLAYER_NAME === desc;
+            const elapsed = Date.now() - start;
+            const tl      = Math.max(0, CIPHER_MS - elapsed);
 
-            const TOTAL_RNDS = s.puzzle === 1 ? 4 : 3;
-            const RND_MS_CUR = s.puzzle === 1 ? 5000 : 10000;
-            const tl = Math.max(0, RND_MS_CUR - elapsed);
-
-            if (s.puzzle === 1) {
-                const {tgt,desc,layouts} = getRound(s.gameSeed,round);
-                const amDesc = (PLAYER_NAME===desc);
-
-                if(IS_DM) {
-                    gc.innerHTML=`
-                    <div class="dm-box">
-                      <p class="rnd-bar">Round ${round+1} of ${TOTAL_RNDS}</p>
-                      <div class="dm-sec" id="ds">${Math.ceil(tl/1000)}</div>
-                      <p class="dm-desc-lbl">${desc} is describing</p>
-                      <div class="dm-vlist">
-                        ${GAME_PLAYERS.filter(p=>p!==desc).map(p=>`
-                          <div class="dm-vrow ${votes[p]!==undefined?'voted':''}">
-                            <span>${p}</span>
-                            <span>${votes[p]!==undefined?'✓ Voted':'···'}</span>
-                          </div>`).join('')}
-                      </div>
-                      <div class="timer-wrap" style="margin-top:6px">
-                        <div class="timer-track">
-                          <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/RND_MS_CUR)*100}%"></div>
-                        </div>
-                      </div>
-                    </div>`;
-                } else if(amDesc) {
-                    gc.innerHTML=`
-                    <div style="text-align:center;max-width:290px">
-                      <p class="rnd-bar">Round ${round+1} of ${TOTAL_RNDS}</p>
-                      <span class="role-badge role-desc">You are describing</span>
-                      <div class="sym-lg">
+            if(IS_DM) {
+                gc.innerHTML=`
+                <div class="dm-box">
+                  <p class="rnd-bar">Round ${round+1} of ${roundCountOf(s)}</p>
+                  <div class="dm-sec" id="ds">${timerText(tl)}</div>
+                  <p class="dm-desc-lbl">${desc} is describing</p>
+                  <div class="dm-vlist">
+                    ${GAME_PLAYERS.filter(p => p !== desc).map(p => `
+                      <div class="dm-vrow ${votes[p]!==undefined?'voted':''}">
+                        <span>${p}</span>
+                        <span>${votes[p]!==undefined?'✓ Voted':'···'}</span>
+                      </div>`).join('')}
+                  </div>
+                  <div class="timer-wrap" style="margin-top:6px">
+                    <div class="timer-track">
+                      <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/CIPHER_MS)*100}%"></div>
+                    </div>
+                  </div>
+                </div>`;
+            } else if(amDesc) {
+                gc.innerHTML=`
+                <div style="text-align:center;max-width:290px">
+                  <p class="rnd-bar">Round ${round+1} of ${roundCountOf(s)}</p>
+                  <span class="role-badge role-desc">You are describing</span>
+                  <div class="sym-lg">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                      ${S[tgt].svg}
+                    </svg>
+                  </div>
+                  <p class="desc-instr">Describe this to your party!</p>
+                  <div class="timer-wrap">
+                    <div class="timer-track">
+                      <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/CIPHER_MS)*100}%"></div>
+                    </div>
+                    <div class="timer-sec" id="ts">${timerText(tl)}</div>
+                  </div>
+                </div>`;
+            } else {
+                const hand = layouts[PLAYER_NAME] || [];
+                gc.innerHTML=`
+                <div style="text-align:center;max-width:290px">
+                  <p class="rnd-bar">Round ${round+1} of ${roundCountOf(s)}</p>
+                  <span class="role-badge role-guess">${desc} is describing&hellip;</span>
+                  <div class="sym-grid">
+                    ${hand.map(sid => `
+                      <button class="sym-btn ${myVote===sid?'selected':''}"
+                        onclick="castVote(${sid})"
+                        ${myVote!==undefined?'disabled':''}>
                         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                          ${S[tgt].svg}
+                          ${S[sid].svg}
                         </svg>
-                      </div>
-                      <p class="desc-instr">Describe this to your party!</p>
-                      <div class="timer-wrap">
-                        <div class="timer-track">
-                          <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/RND_MS_CUR)*100}%"></div>
-                        </div>
-                        <div class="timer-sec" id="ts">${Math.ceil(tl/1000)}</div>
-                      </div>
-                    </div>`;
-                } else {
-                    const hand = layouts[PLAYER_NAME]||[];
-                    gc.innerHTML=`
-                    <div style="text-align:center;max-width:290px">
-                      <p class="rnd-bar">Round ${round+1} of ${TOTAL_RNDS}</p>
-                      <span class="role-badge role-guess">${desc} is describing&hellip;</span>
-                      <div class="sym-grid">
-                        ${hand.map(sid=>`
-                          <button class="sym-btn ${myVote===sid?'selected':''}"
-                            onclick="castVote(${sid})"
-                            ${myVote!==undefined?'disabled':''}>
-                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                              ${S[sid].svg}
-                            </svg>
-                          </button>`).join('')}
-                      </div>
-                      <div class="timer-wrap">
-                        <div class="timer-track">
-                          <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/RND_MS_CUR)*100}%"></div>
-                        </div>
-                        <div class="timer-sec" id="ts">${Math.ceil(tl/1000)}</div>
-                      </div>
-                    </div>`;
-                }
-            } else if (s.puzzle === 2) {
-                if (IS_DM) {
-                    gc.innerHTML=`
-                    <div class="dm-box">
-                      <p class="rnd-bar">Round ${round+1} of ${TOTAL_RNDS}</p>
-                      <div class="dm-sec" id="ds">${Math.ceil(tl/1000)}</div>
-                      <p class="dm-desc-lbl">Players are synching...</p>
-                      <div class="dm-vlist">
-                        ${GAME_PLAYERS.map(p=>`
-                          <div class="dm-vrow ${votes[p]!==undefined?'voted':''}">
-                            <span>${p}</span>
-                            <span>${votes[p]!==undefined?'✓ Locked':'···'}</span>
-                          </div>`).join('')}
-                      </div>
-                      <div class="timer-wrap" style="margin-top:6px">
-                        <div class="timer-track">
-                          <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/RND_MS_CUR)*100}%"></div>
-                        </div>
-                      </div>
-                    </div>`;
-                } else {
-                    gc.innerHTML=`
-                    <div style="text-align:center;max-width:290px">
-                      <p class="rnd-bar">Round ${round+1} of ${TOTAL_RNDS}</p>
-                      <p class="desc-instr" style="margin-bottom:0">Strike precisely together.</p>
-                      <button class="btn-strike ${myVote!==undefined?'confirmed':''}" onclick="castVoteP2()" ${myVote!==undefined?'disabled':''}>
-                        ${myVote!==undefined?'✓':'STRIKE'}
-                      </button>
-                      <div class="timer-wrap">
-                        <div class="timer-track">
-                          <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/RND_MS_CUR)*100}%"></div>
-                        </div>
-                        <div class="timer-sec" id="ts">${Math.ceil(tl/1000)}</div>
-                      </div>
-                    </div>`;
-                }
+                      </button>`).join('')}
+                  </div>
+                  <div class="timer-wrap">
+                    <div class="timer-track">
+                      <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/CIPHER_MS)*100}%"></div>
+                    </div>
+                    <div class="timer-sec" id="ts">${timerText(tl)}</div>
+                  </div>
+                </div>`;
             }
 
-            if(changed || rndTimer===null) {
+            if(changed || rndTimer === null) {
                 clearRT();
-                rndTimer = setInterval(()=>{
-                    const el2=Date.now()-GS.phaseStart;
-                    const tl2=Math.max(0,RND_MS_CUR-el2);
-                    const bar=document.getElementById('tb');
-                    const sec=document.getElementById('ts')||document.getElementById('ds');
-                    if(bar){bar.style.width=(tl2/RND_MS_CUR)*100+'%';bar.classList.toggle('urgent',tl2<2000);}
-                    if(sec) sec.textContent=Math.ceil(tl2/1000);
-                    if(tl2<=0){
-                        clearRT();
-                        if(IS_DM) endRound();
+                rndTimer = setInterval(() => {
+                    const el2 = Date.now() - phaseStartOf(GS);
+                    const tl2 = Math.max(0, CIPHER_MS - el2);
+                    const bar = document.getElementById('tb');
+                    const sec = document.getElementById('ts') || document.getElementById('ds');
+                    if(bar) {
+                        bar.style.width = (tl2 / CIPHER_MS) * 100 + '%';
+                        bar.classList.toggle('urgent', tl2 < 2000);
                     }
-                },80);
+                    if(sec) sec.textContent = timerText(tl2);
+                    if(tl2 <= 0) {
+                        clearRT();
+                        if(IS_DM) endCipherRound();
+                    }
+                }, 80);
             }
         }
 
         async function castVote(sid) {
-            if(!GS||GS.phase!=='round_active') return;
-            if(GS.votes?.[PLAYER_NAME]!==undefined) return;
-            await update(VREF,{[PLAYER_NAME]:sid});
+            if(!GS || GS.phase !== 'round_active' || GS.puzzle !== 1) return;
+            if(GS.votes?.[PLAYER_NAME] !== undefined) return;
+            await update(VREF, { [PLAYER_NAME]: sid });
         }
 
-        async function castVoteP2() {
-            if(!GS||GS.phase!=='round_active') return;
-            if(GS.votes?.[PLAYER_NAME]!==undefined) return;
-            await update(VREF,{[PLAYER_NAME]: serverTimestamp()});
+        function endCipherRound() {
+            if(GS?.phase !== 'round_active' || GS?.puzzle !== 1) return;
+            const round = GS.round || 0;
+            const { tgt, desc } = getRound(GS.gameSeed, round);
+            const votes = GS.votes || {};
+            const guessers = GAME_PLAYERS.filter(p => p !== desc);
+            const correct = guessers.filter(p => votes[p] === tgt).length;
+            const majority = correct > guessers.length / 2;
+            const score = (GS.teamScore || 0) + (majority ? 1 : 0);
+            update(GREF, { phase:'round_reveal', phaseStart: serverTimestamp(), teamScore: score });
         }
 
-        function endRound() {
-            if(GS?.phase!=='round_active') return;
-            const round=GS.round||0;
+        function rCipherReveal(s) {
+            const round = s.round || 0;
+            const { tgt, desc } = getRound(s.gameSeed, round);
+            const votes = s.votes || {};
+            const guessers = GAME_PLAYERS.filter(p => p !== desc);
+            const correct = guessers.filter(p => votes[p] === tgt).length;
+            const majority = correct > guessers.length / 2;
+            const last = round >= roundCountOf(s) - 1;
+            const rows = guessers.map(p => {
+                const ok = votes[p] === tgt;
+                return `<div class="rv-row ${ok?'ok':'bad'}">
+                  <span>${p}</span>
+                  <span>${ok?'✓ Correct':(votes[p]!==undefined?'✗ Wrong':'✗ No answer')}</span>
+                </div>`;
+            }).join('');
 
-            if (GS.puzzle === 1) {
-                const {tgt,desc}=getRound(GS.gameSeed,round);
-                const votes=GS.votes||{};
-                const guessers=GAME_PLAYERS.filter(p=>p!==desc);
-                const correct=guessers.filter(p=>votes[p]===tgt).length;
-                const majority=correct>guessers.length/2;
-                const score=(GS.teamScore||0)+(majority?1:0);
-                update(GREF,{phase:'round_reveal',phaseStart:Date.now(),teamScore:score});
-            } else if (GS.puzzle === 2) {
-                const votes = GS.votes || {};
-                const times = GAME_PLAYERS.map(p => votes[p] || 0);
-                const min = Math.min(...times);
-                const max = Math.max(...times);
-                let score = 0;
-                let diff = 99999;
-                if (min > 0) {
-                    diff = max - min;
-                    if (diff <= 200) score = 100;
-                    else if (diff <= 500) score = 80;
-                    else if (diff <= 1000) score = 50;
-                    else if (diff <= 2000) score = 20;
-                    else score = 10;
-                }
-                const newScore = (GS.teamScore || 0) + score;
-                update(GREF, { phase: 'round_reveal', phaseStart: Date.now(), teamScore: newScore, lastDiff: diff });
-            }
+            gc.innerHTML=`
+            <div style="text-align:center;max-width:290px">
+              <p class="rnd-bar">Round ${round+1} — The symbol was&hellip;</p>
+              <div class="rv-sym">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${S[tgt].svg}</svg>
+              </div>
+              <p class="ph-title" style="margin-bottom:6px">${S[tgt].name}</p>
+              <div class="rv-outcome ${majority?'win':'lose'}">${majority?'Success':'Failed'}</div>
+              <div class="rv-rows">${rows}</div>
+              <p class="score-line">Score: ${s.teamScore} / ${round+1}</p>
+              ${IS_DM
+                ? `<button class="btn-action" onclick="advance()">${last?'Final Scores &rarr;':'Next Round &rarr;'}</button>`
+                : `<p class="w-text" style="font-size:11px;letter-spacing:2px">Waiting for DM&hellip;</p>`
+              }
+            </div>`;
         }
 
-        /* ── ROUND REVEAL ── */
-        function rReveal(s) {
-            const round=s.round||0;
+        function rCipherOver(s) {
+            const score = s.teamScore || 0;
+            const tiers = [
+                [4,'Perfect Cipher!','Your bonds are unbreakable'],
+                [3,'Strong Bond','Your communication shines'],
+                [2,'Partial Success','Some signals were lost'],
+                [1,'Struggling','The cipher proved difficult'],
+                [0,'Cipher Failed','The darkness claims this trial'],
+            ];
+            const [, title, sub] = tiers.find(([m]) => score >= m);
+            gc.innerHTML=`
+            <div style="text-align:center;max-width:280px">
+              <p class="go-head">Trial Complete</p>
+              <div class="go-score">${score}<span class="go-max"> / 4</span></div>
+              <p class="go-title">${title}</p>
+              <p class="go-sub">${sub}</p>
+              ${IS_DM?`<button class="btn-action" onclick="reset()">Play Again</button>`:''}
+            </div>`;
+        }
 
-            if (s.puzzle === 1) {
-                const {tgt,desc}=getRound(s.gameSeed,round);
-                const votes=s.votes||{};
-                const guessers=GAME_PLAYERS.filter(p=>p!==desc);
-                const correct=guessers.filter(p=>votes[p]===tgt).length;
-                const majority=correct>guessers.length/2;
-                const last=round>=3;
+        /* ── PUZZLE II : SILENT SYNC ── */
+        function calcSyncData(s) {
+            const start = phaseStartOf(s);
+            const raw = s.presses || {};
+            const entries = GAME_PLAYERS.map(player => {
+                const rawValue = raw[player];
+                const pressed = typeof rawValue === 'number';
+                const stamp = pressed ? rawValue : start + SYNC_MS;
+                const offset = Math.min(SYNC_MS, Math.max(0, stamp - start));
+                return { player, pressed, stamp, offset };
+            });
+            const offsets = entries.map(e => e.offset);
+            const spread = offsets.length ? Math.max(...offsets) - Math.min(...offsets) : SYNC_MS;
+            const score = Math.max(0, Math.round(100 * (1 - (spread / SYNC_MS))));
+            return {
+                entries,
+                offsets,
+                spread,
+                score,
+                pressedCount: entries.filter(e => e.pressed).length,
+            };
+        }
 
-                const rows=guessers.map(p=>{
-                    const ok=votes[p]===tgt;
-                    return `<div class="rv-row ${ok?'ok':'bad'}">
-                      <span>${p}</span>
-                      <span>${ok?'✓ Correct':(votes[p]!==undefined?'✗ Wrong':'✗ No answer')}</span>
-                    </div>`;
-                }).join('');
+        function rSyncRound(s, changed) {
+            const round = s.round || 0;
+            const start = phaseStartOf(s);
+            const presses = s.presses || {};
+            const myPress = presses[PLAYER_NAME];
+            const myOffset = typeof myPress === 'number' ? Math.min(SYNC_MS, Math.max(0, myPress - start)) : null;
+            const elapsed = Date.now() - start;
+            const tl = Math.max(0, SYNC_MS - elapsed);
+            const data = calcSyncData(s);
 
+            if(IS_DM) {
                 gc.innerHTML=`
-                <div style="text-align:center;max-width:290px">
-                  <p class="rnd-bar">Round ${round+1} — The symbol was&hellip;</p>
-                  <div class="rv-sym">
-                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${S[tgt].svg}</svg>
+                <div class="dm-box">
+                  <p class="rnd-bar">Round ${round+1} of ${roundCountOf(s)}</p>
+                  <div class="dm-sec" id="ds">${timerText(tl, true)}</div>
+                  <p class="dm-desc-lbl">${data.pressedCount} of ${GAME_PLAYERS.length} seals struck</p>
+                  <div class="dm-vlist">
+                    ${data.entries.map(e => `
+                      <div class="dm-vrow ${e.pressed?'voted':''}">
+                        <span>${e.player}</span>
+                        <span>${e.pressed ? fmtMs(e.offset) : '···'}</span>
+                      </div>`).join('')}
                   </div>
-                  <p class="ph-title" style="margin-bottom:6px">${S[tgt].name}</p>
-                  <div class="rv-outcome ${majority?'win':'lose'}">${majority?'Success':'Failed'}</div>
-                  <div class="rv-rows">${rows}</div>
-                  <p class="score-line">Score: ${s.teamScore} / ${round+1}</p>
-                  ${IS_DM
-                    ?`<button class="btn-action" onclick="advance()">${last?'Final Scores &rarr;':'Next Round &rarr;'}</button>`
-                    :`<p class="w-text" style="font-size:11px;letter-spacing:2px">Waiting for DM&hellip;</p>`
-                  }
+                  <div class="timer-wrap" style="margin-top:6px">
+                    <div class="timer-track">
+                      <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/SYNC_MS)*100}%"></div>
+                    </div>
+                  </div>
                 </div>`;
-            } else if (s.puzzle === 2) {
-                const last = round >= 2;
-                const diff = s.lastDiff;
-                const votes = s.votes || {};
-                let diffText = diff > 10000 ? "Failed" : (diff / 1000).toFixed(3) + "s";
-                let winClass = diff <= 500 ? 'win' : (diff > 2000 ? 'lose' : '');
-
-                const minVote = Math.min(...Object.values(votes).filter(v=>v));
-                const rows = GAME_PLAYERS.map(p => {
-                    const v = votes[p];
-                    const offset = v ? ((v - minVote)/1000).toFixed(3) + "s" : "No answer";
-                    return `<div class="rv-row ${v?'ok':'bad'}">
-                      <span>${p}</span>
-                      <span>${offset === "0.000s" ? "Earliest" : "+" + offset}</span>
-                    </div>`;
-                }).join('');
-
-                gc.innerHTML=`
-                <div style="text-align:center;max-width:290px">
-                  <p class="rnd-bar">Round ${round+1} — Time Difference</p>
-                  <p class="ph-title" style="margin-bottom:6px; font-size:28px">${diffText}</p>
-                  <div class="rv-outcome ${winClass}">${diff <= 200 ? 'Perfect!' : diff <= 1000 ? 'Good' : 'Too far apart'}</div>
-                  <div class="rv-rows">${rows}</div>
-                  <p class="score-line">Total Score: ${s.teamScore}</p>
-                  ${IS_DM
-                    ?`<button class="btn-action" onclick="advance()">${last?'Final Scores &rarr;':'Next Round &rarr;'}</button>`
-                    :`<p class="w-text" style="font-size:11px;letter-spacing:2px">Waiting for DM&hellip;</p>`
-                  }
-                </div>`;
-            }
-        }
-
-        async function advance() {
-            const round=GS?.round||0;
-            const maxRounds = GS?.puzzle === 1 ? 3 : 2; // zero-indexed
-            if(round >= maxRounds) {
-                await update(GREF,{phase:'game_over',phaseStart:Date.now()});
             } else {
-                await update(GREF,{phase:'countdown',round:round+1,phaseStart:Date.now(),votes:{}});
+                gc.innerHTML=`
+                <div class="sync-box">
+                  <p class="rnd-bar">Round ${round+1} of ${roundCountOf(s)}</p>
+                  <button class="sync-btn ${myPress!==undefined?'locked':''}" onclick="tapSync()" ${myPress!==undefined?'disabled':''}>
+                    ${myPress!==undefined?'Seal Set':'Press the Seal'}
+                  </button>
+                  <p class="sync-note">${myPress!==undefined ? `Locked at ${fmtMs(myOffset)}` : 'Without speaking, press as one.'}</p>
+                  <div class="timer-wrap">
+                    <div class="timer-track">
+                      <div class="timer-fill ${tl<2000?'urgent':''}" id="tb" style="width:${(tl/SYNC_MS)*100}%"></div>
+                    </div>
+                    <div class="timer-sec" id="ts">${timerText(tl, true)}</div>
+                  </div>
+                  <div class="sync-stats">
+                    <div class="sync-stat"><span>Window</span><span>10.000s</span></div>
+                    <div class="sync-stat"><span>Your Strike</span><span>${myPress!==undefined ? fmtMs(myOffset) : 'Pending'}</span></div>
+                  </div>
+                </div>`;
+            }
+
+            if(changed || rndTimer === null) {
+                clearRT();
+                rndTimer = setInterval(() => {
+                    const live = GS || s;
+                    const start2 = phaseStartOf(live);
+                    const tl2 = Math.max(0, SYNC_MS - (Date.now() - start2));
+                    const bar = document.getElementById('tb');
+                    const sec = document.getElementById('ts') || document.getElementById('ds');
+                    if(bar) {
+                        bar.style.width = (tl2 / SYNC_MS) * 100 + '%';
+                        bar.classList.toggle('urgent', tl2 < 2000);
+                    }
+                    if(sec) sec.textContent = timerText(tl2, true);
+                    const allPressed = GAME_PLAYERS.every(p => typeof (GS?.presses || {})[p] === 'number');
+                    if(tl2 <= 0 || allPressed) {
+                        clearRT();
+                        if(IS_DM) endSyncRound();
+                    }
+                }, 50);
             }
         }
 
-        /* ── GAME OVER ── */
-        function rOver(s) {
-            const score=s.teamScore||0;
-            if (s.puzzle === 1) {
-                const tiers=[
-                    [4,'Perfect Cipher!','Your bonds are unbreakable'],
-                    [3,'Strong Bond',    'Your communication shines'],
-                    [2,'Partial Success','Some signals were lost'],
-                    [1,'Struggling',     'The cipher proved difficult'],
-                    [0,'Cipher Failed',  'The darkness claims this trial'],
-                ];
-                const [,title,sub]=tiers.find(([m])=>score>=m);
-                gc.innerHTML=`
-                <div style="text-align:center;max-width:280px">
-                  <p class="go-head">Trial Complete</p>
-                  <div class="go-score">${score}<span class="go-max"> / 4</span></div>
-                  <p class="go-title">${title}</p>
-                  <p class="go-sub">${sub}</p>
-                  ${IS_DM?`<button class=\"btn-action\" onclick=\"reset()\">Play Again</button>`:''}
-                </div>`;
-            } else if (s.puzzle === 2) {
-                const tiers=[
-                    [280,'Mind Link',     'Flawless synchrony'],
-                    [200,'Harmonious',    'Strong timing'],
-                    [100,'Fragmented',    'Your signals crossed'],
-                    [0,  'Desynced',      'The darkness claimed your rhythm'],
-                ];
-                const [,title,sub]=tiers.find(([m])=>score>=m);
-                gc.innerHTML=`
-                <div style="text-align:center;max-width:280px">
-                  <p class="go-head">Trial Complete</p>
-                  <div class="go-score">${score}<span class="go-max" style="font-size:22px"> / 300</span></div>
-                  <p class="go-title">${title}</p>
-                  <p class="go-sub">${sub}</p>
-                  ${IS_DM?`<button class=\"btn-action\" onclick=\"reset()\">Play Again</button>`:''}
-                </div>`;
+        async function tapSync() {
+            if(!GS || GS.phase !== 'round_active' || GS.puzzle !== 2) return;
+            if(typeof GS.presses?.[PLAYER_NAME] === 'number') return;
+            await update(PREF, { [PLAYER_NAME]: serverTimestamp() });
+        }
+
+        function endSyncRound() {
+            if(GS?.phase !== 'round_active' || GS?.puzzle !== 2) return;
+            const round = GS.round || 0;
+            const data = calcSyncData(GS);
+            const roundScores = [...(GS.roundScores || [])];
+            roundScores[round] = data.score;
+            const numericScores = roundScores.filter(v => typeof v === 'number');
+            const teamScore = numericScores.length ? Math.round(avg(numericScores)) : 0;
+            update(GREF, {
+                phase: 'round_reveal',
+                phaseStart: serverTimestamp(),
+                roundScores,
+                teamScore
+            });
+        }
+
+        function rSyncReveal(s) {
+            const round = s.round || 0;
+            const data = calcSyncData(s);
+            const roundScores = s.roundScores || [];
+            const roundScore = typeof roundScores[round] === 'number' ? roundScores[round] : data.score;
+            const numericScores = roundScores.filter(v => typeof v === 'number');
+            const avgScore = numericScores.length ? Math.round(avg(numericScores)) : roundScore;
+            const last = round >= roundCountOf(s) - 1;
+            const outcome = roundScore >= 95 ? 'Perfect Unity'
+                : roundScore >= 80 ? 'Tight Formation'
+                : roundScore >= 60 ? 'Close'
+                : roundScore >= 40 ? 'Wavering'
+                : 'Out of Sync';
+            const rows = data.entries.map(e => `
+                <div class="rv-row ${e.pressed?'ok':'bad'}">
+                  <span>${e.player}</span>
+                  <span>${e.pressed ? fmtMs(e.offset) : 'No press'}</span>
+                </div>`).join('');
+
+            gc.innerHTML=`
+            <div style="text-align:center;max-width:290px">
+              <p class="rnd-bar">Round ${round+1} — Synchrony Revealed</p>
+              <p class="ph-title" style="margin-bottom:6px">Silent Sync</p>
+              <div class="rv-outcome ${roundScore>=75?'win':'lose'}">${outcome}</div>
+              <div class="rv-rows">${rows}</div>
+              <p class="score-line">Spread: ${fmtMs(data.spread)} · Round Score: ${roundScore} / 100</p>
+              <p class="score-line">Running Average: ${avgScore} / 100</p>
+              ${IS_DM
+                ? `<button class="btn-action" onclick="advance()">${last?'Final Scores &rarr;':'Next Round &rarr;'}</button>`
+                : `<p class="w-text" style="font-size:11px;letter-spacing:2px">Waiting for DM&hellip;</p>`
+              }
+            </div>`;
+        }
+
+        function rSyncOver(s) {
+            const score = s.teamScore || 0;
+            const rounds = (s.roundScores || []).filter(v => typeof v === 'number');
+            const breakdown = rounds.map((v, i) => `R${i+1} ${Math.round(v)}`).join(' · ');
+            const tiers = [
+                [95,'Perfect Harmony','Your hands moved as one'],
+                [80,'Tight Formation','Only the slightest lag remained'],
+                [60,'Near Miss','The rhythm almost aligned'],
+                [40,'Shifting Rhythm','The timing wavered'],
+                [0,'Broken Cadence','The seal rejected the attempt'],
+            ];
+            const [, title, sub] = tiers.find(([m]) => score >= m);
+            gc.innerHTML=`
+            <div style="text-align:center;max-width:290px">
+              <p class="go-head">Trial Complete</p>
+              <div class="go-score">${score}<span class="go-max"> / 100</span></div>
+              <p class="go-title">${title}</p>
+              <p class="go-sub">${sub}</p>
+              <p class="score-line" style="margin-bottom:22px">${breakdown || 'No rounds recorded'}</p>
+              ${IS_DM?`<button class="btn-action" onclick="reset()">Play Again</button>`:''}
+            </div>`;
+        }
+
+        /* ── SHARED ADVANCE / RESET ── */
+        async function advance() {
+            const round = GS?.round || 0;
+            const totalRounds = roundCountOf(GS);
+            if(round >= totalRounds - 1) {
+                await update(GREF, { phase:'game_over', phaseStart: serverTimestamp() });
+            } else {
+                await update(GREF, {
+                    phase:'countdown',
+                    round: round + 1,
+                    phaseStart: serverTimestamp(),
+                    votes: {},
+                    presses: {}
+                });
             }
         }
 
-        async function reset() { await set(GREF,{phase:'idle'}); }
-
+        async function reset() { await set(GREF, { phase:'idle' }); }
     </script>
 </body>
 </html>
