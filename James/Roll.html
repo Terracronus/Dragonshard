@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dice Arena – James</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0a0002;
+            color: white;
+            font-family: 'serif';
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            background-image: radial-gradient(circle, #1a0005 0%, #000000 100%);
+        }
+
+        #dice-box {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
+        }
+        #dice-box canvas {
+            position: absolute !important;
+            top: 0 !important; left: 0 !important;
+            width: 100% !important; height: 100% !important;
+        }
+
+        /* ── Status bar top-right ── */
+        #engine-status {
+            position: absolute; top: 20px; right: 20px;
+            color: #ffcccc; font-size: 12px; z-index: 100;
+            pointer-events: none; letter-spacing: 1px;
+        }
+
+        /* ── Back nav top-left ── */
+        .back-nav {
+            position: absolute; top: 20px; left: 20px; z-index: 100;
+            color: #ff3366; text-decoration: none; font-size: 11px;
+            border: 1px solid rgba(255, 51, 102, 0.3); padding: 8px 15px;
+            border-radius: 20px; background: rgba(10, 0, 2, 0.6);
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        /* ── Roll notifications panel ── */
+        #roll-log {
+            position: absolute;
+            top: 65px; left: 50%; transform: translateX(-50%);
+            z-index: 100; display: flex; flex-direction: column;
+            align-items: center; gap: 8px; pointer-events: none;
+            width: 90%; max-width: 420px;
+        }
+        .roll-note {
+            width: 100%; box-sizing: border-box;
+            background: rgba(10, 0, 2, 0.88);
+            padding: 10px 18px; border-radius: 6px;
+            font-size: 13px; letter-spacing: 1px; text-align: center;
+            animation: slideIn 0.25s ease;
+        }
+        .roll-note.rolling {
+            border: 1px solid #ff9933; color: #ffcc99;
+        }
+        .roll-note.complete {
+            border: 1px solid #44ffaa; color: #aaffdd;
+        }
+        .roll-note.mine {
+            border-color: #ff3366; color: #ffcccc;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Roll controls bottom ── */
+        .controls {
+            position: absolute; bottom: 40px; width: 100%;
+            text-align: center; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
+        }
+        .button-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .roll-btn {
+            background: rgba(40, 0, 10, 0.6); border: 1px solid #ff3366;
+            color: #ffcccc; padding: 12px 25px;
+            text-transform: uppercase; letter-spacing: 2px;
+            cursor: pointer; border-radius: 4px;
+            transition: all 0.4s ease; font-size: 12px;
+        }
+        .roll-btn:hover { background: #ff3366; color: white; box-shadow: 0 0 20px #ff3366; }
+        .roll-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <a href="Hub.html" class="back-nav">← Back to Hub</a>
+    <div id="engine-status">Loading Engine...</div>
+    <div id="dice-box"></div>
+    <div id="roll-log"></div>
+
+    <div class="controls">
+        <div class="button-group">
+            <button id="btn-d4"  class="roll-btn">D4</button>
+            <button id="btn-d6"  class="roll-btn">D6</button>
+            <button id="btn-d8"  class="roll-btn">D8</button>
+            <button id="btn-d10" class="roll-btn">D10</button>
+            <button id="btn-d12" class="roll-btn">D12</button>
+            <button id="btn-d20" class="roll-btn">D20</button>
+            <button id="btn-2d6" class="roll-btn">2D6</button>
+        </div>
+        <div class="button-group">
+            <button id="btn-clear" class="roll-btn" style="border-color:rgba(255,51,102,0.4); font-size:11px; padding:8px 18px;">Clear My Dice</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import DiceBox from "https://terracronus.github.io/Dragonshard/assets/dice-box/dice-box.es.min.js";
+
+        // ── Identity ──────────────────────────────────────────────
+        const PLAYER_NAME = "James";
+
+        // ── Firebase ──────────────────────────────────────────────
+        const firebaseConfig = {
+            apiKey:            "AIzaSyA4wjtRUU5eTxBKMrYp615Ynqo2c5LSjsI",
+            authDomain:        "terracronus-dragonshard.firebaseapp.com",
+            projectId:         "terracronus-dragonshard",
+            storageBucket:     "terracronus-dragonshard.firebasestorage.app",
+            messagingSenderId: "479723332460",
+            appId:             "1:479723332460:web:2ea5b21c67ddc70b018949",
+            databaseURL:       "https://terracronus-dragonshard-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+
+        const app        = initializeApp(firebaseConfig);
+        const db         = getDatabase(app);
+        const myRef      = ref(db, `roll_status/${PLAYER_NAME}`);   // we own this node
+        const allRef     = ref(db, "roll_status");                    // we observe this
+
+        // ── DiceBox ───────────────────────────────────────────────
+        const engineStatus = document.getElementById('engine-status');
+        const rollButtons  = document.querySelectorAll('.roll-btn');
+        const logEl        = document.getElementById('roll-log');
+
+        const setReady = (ready) => rollButtons.forEach(b => b.disabled = !ready);
+        setReady(false);
+
+        const diceContainer = document.getElementById('dice-box');
+        diceContainer.style.width  = window.innerWidth  + 'px';
+        diceContainer.style.height = window.innerHeight + 'px';
+
+        const Box = new DiceBox({
+            container:      "#dice-box",
+            assetPath:      "/Dragonshard/assets/dice-box/assets/",
+            theme:          "default",
+            themeColor:     "#ffffff",
+            labelColor:     "#000000",
+            scale:          7,
+            throwForce:     12,
+            spinForce:      12,
+            startingHeight: 15,
+            width:          window.innerWidth,
+            height:         window.innerHeight
+        });
+
+        await Box.init();
+        Box.updateConfig({ width: window.innerWidth, height: window.innerHeight });
+
+        engineStatus.innerText = "Arena Ready";
+        setReady(true);
+
+        // ── Notification renderer ─────────────────────────────────
+        // Re-renders the log panel from the current Firebase snapshot.
+        // Stale entries (> 15 s old) are silently dropped.
+        const renderLog = (snapshot) => {
+            const all = snapshot.val() || {};
+            logEl.innerHTML = "";
+
+            for (const [player, data] of Object.entries(all)) {
+                if (!data || (Date.now() - data.timestamp) > 15000) continue;
+
+                const mine = (player === PLAYER_NAME);
+                const el   = document.createElement('div');
+                el.className = `roll-note ${data.status}${mine ? " mine" : ""}`;
+
+                if (data.status === "rolling") {
+                    el.textContent = mine
+                        ? `Rolling ${data.notation}…`
+                        : `${player} is rolling ${data.notation}…`;
+                } else if (data.status === "complete") {
+                    const multi  = data.values.length > 1;
+                    const detail = multi
+                        ? `[${data.values.join(" + ")}] = ${data.total}`
+                        : String(data.total);
+                    el.textContent = mine
+                        ? `You rolled ${data.notation}: ${detail}`
+                        : `${player} rolled ${data.notation}: ${detail}`;
+                }
+
+                logEl.appendChild(el);
+            }
+        };
+
+        onValue(allRef, renderLog);
+
+        // ── Roll logic ────────────────────────────────────────────
+        let busy = false;
+
+        const doRoll = async (notation) => {
+            if (busy) return;
+            busy = true;
+            setReady(false);
+
+            try {
+                // Phase 1 – announce
+                await set(myRef, {
+                    notation,
+                    status:    "rolling",
+                    timestamp: Date.now()
+                });
+
+                // Phase 2 – roll locally (only this player sees the animation)
+                Box.clear();
+                const results = await Box.roll(notation);
+                const values  = results.map(r => r.value);
+                const total   = values.reduce((a, b) => a + b, 0);
+
+                // Phase 3 – broadcast result
+                await set(myRef, {
+                    notation,
+                    status:    "complete",
+                    values,
+                    total,
+                    timestamp: Date.now()
+                });
+
+                // Phase 4 – auto-clear our Firebase entry after 10 s
+                setTimeout(() => set(myRef, null), 10000);
+
+            } catch (err) {
+                console.error("Roll error:", err);
+            } finally {
+                busy = false;
+                setReady(true);
+            }
+        };
+
+        // ── Button bindings ───────────────────────────────────────
+        document.getElementById('btn-d4') .addEventListener('click', () => doRoll('1d4'));
+        document.getElementById('btn-d6') .addEventListener('click', () => doRoll('1d6'));
+        document.getElementById('btn-d8') .addEventListener('click', () => doRoll('1d8'));
+        document.getElementById('btn-d10').addEventListener('click', () => doRoll('1d10'));
+        document.getElementById('btn-d12').addEventListener('click', () => doRoll('1d12'));
+        document.getElementById('btn-d20').addEventListener('click', () => doRoll('1d20'));
+        document.getElementById('btn-2d6').addEventListener('click', () => doRoll('2d6'));
+
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            Box.clear();
+        });
+    </script>
+</body>
+</html>
