@@ -18,17 +18,16 @@
             background-image: radial-gradient(circle, #1a0005 0%, #000000 100%);
         }
 
+        /* Dice canvas lives only in the upper zone — sized by JS */
         #dice-box {
             position: absolute;
-            inset: 0;
-            width: 100vw; height: 100vh;
+            top: 0; left: 0;
             z-index: 1;
         }
         #dice-box canvas {
             position: absolute !important;
-            inset: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
+            top: 0 !important; left: 0 !important;
+            width: 100% !important; height: 100% !important;
         }
 
         /* ── Status bar top-right ── */
@@ -64,7 +63,7 @@
         }
         .roll-note.rolling { border: 1px solid #ff9933; color: #ffcc99; }
         .roll-note.complete { border: 1px solid #44ffaa; color: #aaffdd; }
-        .roll-note.mine     { border-color: #ff3366;  color: #ffcccc; }
+        .roll-note.mine     { border-color: #ff3366; color: #ffcccc; }
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(-5px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -79,6 +78,16 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+        }
+
+        /* subtle gradient fade so the panel doesn't hard-cut into the dice area */
+        #bottom-panel::before {
+            content: '';
+            position: absolute;
+            top: -32px; left: 0; right: 0;
+            height: 32px;
+            background: linear-gradient(to bottom, transparent, rgba(10,0,2,0.55));
+            pointer-events: none;
         }
 
         /* ── Roll History ── */
@@ -154,14 +163,11 @@
         }
         .roll-btn:active { background: #ff3366; color: white; box-shadow: 0 0 16px #ff3366; }
         .roll-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-        /* D100 spans 2 columns, Clear spans 2 columns */
         #btn-d100  { grid-column: span 2; }
         #btn-clear {
             grid-column: span 2;
             border-color: rgba(255, 51, 102, 0.35);
             font-size: 11px;
-            letter-spacing: 1.5px;
             color: rgba(255,204,204,0.6);
             padding: 10px 4px;
         }
@@ -174,7 +180,6 @@
     <div id="roll-log"></div>
 
     <div id="bottom-panel">
-        <!-- Roll History -->
         <div id="history-wrap">
             <details>
                 <summary>Roll History</summary>
@@ -183,11 +188,6 @@
                 </div>
             </details>
         </div>
-
-        <!-- Dice buttons: 4-col grid -->
-        <!-- Row 1: D4  D6  D8  D10  -->
-        <!-- Row 2: D12 D20 D100(×2) -->
-        <!-- Row 3: Clear(×2) [empty] -->
         <div id="dice-grid">
             <button id="btn-d4"   class="roll-btn">D4</button>
             <button id="btn-d6"   class="roll-btn">D6</button>
@@ -229,13 +229,20 @@
         const rollButtons  = document.querySelectorAll('.roll-btn');
         const logEl        = document.getElementById('roll-log');
         const histListEl   = document.getElementById('history-list');
+        const bottomPanel  = document.getElementById('bottom-panel');
+        const diceContainer = document.getElementById('dice-box');
 
         const setReady = (ready) => rollButtons.forEach(b => b.disabled = !ready);
         setReady(false);
 
-        const diceContainer = document.getElementById('dice-box');
-        diceContainer.style.width  = window.innerWidth  + 'px';
-        diceContainer.style.height = window.innerHeight + 'px';
+        // ── Measure available dice area (above the button panel) ──
+        // We read the panel's height AFTER layout so we get the real pixel value.
+        const panelH    = bottomPanel.getBoundingClientRect().height;
+        const diceW     = window.innerWidth;
+        const diceH     = window.innerHeight - panelH;
+
+        diceContainer.style.width  = diceW + 'px';
+        diceContainer.style.height = diceH + 'px';
 
         const Box = new DiceBox({
             container:      "#dice-box",
@@ -247,12 +254,12 @@
             throwForce:     12,
             spinForce:      12,
             startingHeight: 15,
-            width:          window.innerWidth,
-            height:         window.innerHeight
+            width:          diceW,
+            height:         diceH
         });
 
         await Box.init();
-        Box.updateConfig({ width: window.innerWidth, height: window.innerHeight });
+        Box.updateConfig({ width: diceW, height: diceH });
         engineStatus.innerText = "Arena Ready";
         setReady(true);
 
@@ -333,10 +340,8 @@
             if (busy) return;
             busy = true;
             setReady(false);
-
             try {
                 await set(myRef, { notation, label, status: "rolling", timestamp: Date.now() });
-
                 Box.clear();
                 const results = await Box.roll(notation);
                 const rawVals = results.map(r => r.value);
@@ -355,7 +360,6 @@
                 await set(myRef, { notation, label, display, total, status: "complete", timestamp: Date.now() });
                 await saveToHistory({ player: PLAYER_NAME, notation, label, display, total, timestamp: Date.now() });
                 setTimeout(() => set(myRef, null), 10000);
-
             } catch (err) {
                 console.error("Roll error:", err);
             } finally {
