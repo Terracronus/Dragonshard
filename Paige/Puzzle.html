@@ -133,8 +133,6 @@
         const app   = initializeApp(FB);
         const db    = getDatabase(app);
         const GREF  = ref(db,'puzzle_game');
-        const VREF  = ref(db,'puzzle_game/votes');
-        const RREF  = ref(db,'puzzle_game/ready');
 
         const S = [
             { name:'The Ring', svg:`<circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="9"/><circle cx="50" cy="50" r="20" fill="none" stroke="currentColor" stroke-width="9"/>` },
@@ -206,26 +204,28 @@
         function clearRT() { if(rndTimer){clearTimeout(rndTimer);rndTimer=null;} }
 
         /* ──────────────────────── GLOBAL EXPORTS */
+        // Removed empty object initializations like `ready: {}` that crash Firebase updates later.
         window.selPuzzle = async n => {
-            await set(GREF,{ phase:'select', puzzle:n, gameSeed:((Math.random()*999983|0)+1), ready:{}, round:0, teamScore:0, votes:{}, mazeTimes:{}, phaseStart:Date.now() });
+            await set(GREF, { phase:'select', puzzle:n, gameSeed:((Math.random()*999983|0)+1), round:0, teamScore:0, phaseStart:Date.now() });
         };
         window.cancelGame = async () => await set(GREF,{phase:'idle'});
-        window.tapRdy = async () => await update(RREF,{[PLAYER_NAME]:true});
+        
+        // Replaced `update()` with direct `set()` targeting specific paths to bypass deleted-node exceptions.
+        window.tapRdy = async () => await set(ref(db, `puzzle_game/ready/${PLAYER_NAME}`), true);
         window.castVote = async sid => {
             if(!GS||GS.phase!=='round_active') return;
             if(GS.votes?.[PLAYER_NAME]!==undefined) return;
-            await update(VREF,{[PLAYER_NAME]:sid});
+            await set(ref(db, `puzzle_game/votes/${PLAYER_NAME}`), sid);
         };
+        
         window.advance = async () => {
             const round = GS?.round || 0;
             const maxRounds = GS?.puzzle === 2 ? 3 : 4;
             if(round >= maxRounds - 1) {
                 await update(GREF,{phase:'game_over',phaseStart:Date.now()});
             } else {
-                const updates = { phase:'countdown', round:round+1, phaseStart:Date.now() };
-                if(GS?.puzzle === 1) updates.votes = {};
-                else if(GS?.puzzle === 2) { updates.mazeTimes = {}; updates.mazeFirstFinish = null; }
-                await update(GREF, updates);
+                // We use `null` to clear fields cleanly, instead of `{}`.
+                await update(GREF, { phase:'countdown', round:round+1, phaseStart:Date.now(), votes: null, mazeTimes: null, mazeFirstFinish: null });
             }
         };
         window.reset = async () => await set(GREF,{phase:'idle'});
@@ -272,10 +272,10 @@
 
         async function submitMazeFinish() {
             if(GS.mazeTimes?.[PLAYER_NAME]) return;
-            const updates = {};
-            updates[`mazeTimes/${PLAYER_NAME}`] = Date.now();
-            if(!GS.mazeFirstFinish) updates['mazeFirstFinish'] = Date.now();
-            await update(GREF, updates);
+            await set(ref(db, `puzzle_game/mazeTimes/${PLAYER_NAME}`), Date.now());
+            if(!GS.mazeFirstFinish) {
+                await set(ref(db, 'puzzle_game/mazeFirstFinish'), Date.now());
+            }
         }
 
         function renderMazeBalls() {
@@ -329,14 +329,26 @@
             } else {
                 gc.innerHTML=`<div style="text-align:center;max-width:280px"><p class="ph-title">${title}</p><p class="ph-sub">${sub}</p><button class="btn-rdy ${meOk?'confirmed':''}" onclick="tapRdy()" ${meOk?'disabled':''}>${meOk?'✓ Ready':'Ready?'}</button><div class="rdy-list">${rows}</div></div>`;
             }
-            if(allOk && IS_DM) { setTimeout(()=>{ if(GS?.phase==='select') update(GREF,{phase:'countdown',phaseStart:Date.now()}); },700); }
+            if(allOk && IS_DM && !window.isAdvancing) {
+                window.isAdvancing = true;
+                setTimeout(()=>{ 
+                    window.isAdvancing = false;
+                    if(GS?.phase==='select') update(GREF,{phase:'countdown',phaseStart:Date.now()}); 
+                }, 700); 
+            }
         }
 
         function rCD(s) {
             const tick=()=>{
                 const tl = Math.max(0, CD_MS - (Date.now() - s.phaseStart));
                 gc.innerHTML=`<div style="text-align:center"><div class="cnt-num">${tl>0?Math.ceil(tl/1000):'GO!'}</div><div class="cnt-label">Prepare yourselves</div></div>`;
-                if(tl<=0) { if(IS_DM && GS?.phase==='countdown') update(GREF,{phase:'round_active',phaseStart:Date.now(),votes:{}}); }
+                if(tl<=0) { 
+                    if(IS_DM && GS?.phase==='countdown' && !window.isStarting) { 
+                        window.isStarting = true;
+                        update(GREF,{phase:'round_active', phaseStart:Date.now(), votes: null, mazeTimes: null, mazeFirstFinish: null}); 
+                        setTimeout(() => window.isStarting = false, 1000);
+                    } 
+                }
                 else setTimeout(tick,90);
             };
             tick();
@@ -382,7 +394,7 @@
             gc.innerHTML=`<div style="text-align:center;max-width:280px"><p class="go-head">Trial Complete</p><div class="go-score">${score}<span class="go-max"> / 4</span></div><p class="go-title">${title}</p><p class="go-sub">${sub}</p>${IS_DM?`<button class="btn-action" onclick="reset()">Play Again</button>`:''}</div>`;
         }
 
-        /* ── PUCTURE 2: THE LABYRINTH ── */
+        /* ── PUZZLE 2: THE LABYRINTH ── */
         function rRoundP2(s, changed) {
             const round = s.round || 0;
             const first = s.mazeFirstFinish;
