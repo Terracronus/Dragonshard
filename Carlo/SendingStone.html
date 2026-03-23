@@ -7,11 +7,11 @@
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-            --ac: #f59e0b; /* Arcane accent color */
+            --ac: #9090bb; /* DM accent color */
         }
         body {
-            background: #050010;
-            background-image: radial-gradient(circle, #130025 0%, #000008 100%);
+            background: #00000d;
+            background-image: radial-gradient(circle, #0d0d1a 0%, #000005 100%);
             color: white;
             font-family: serif;
             height: 100vh;
@@ -28,7 +28,7 @@
             color: var(--ac);
             text-decoration: none;
             font-size: 11px;
-            border: 1px solid rgba(245,158,11,0.35);
+            border: 1px solid rgba(144,144,187,0.35);
             padding: 7px 14px;
             border-radius: 20px;
             background: rgba(0,0,0,0.5);
@@ -69,7 +69,7 @@
         .chat-area {
             flex: 1;
             background: rgba(0,0,0,0.6);
-            border: 1px solid rgba(245,158,11,0.3);
+            border: 1px solid rgba(144,144,187,0.3);
             border-radius: 5px;
             padding: 15px;
             overflow-y: auto;
@@ -109,7 +109,7 @@
             flex: 1;
             padding: 12px;
             background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(245,158,11,0.5);
+            border: 1px solid rgba(144,144,187,0.5);
             color: white;
             border-radius: 5px;
             font-family: serif;
@@ -151,9 +151,8 @@
         import { getDatabase, ref, onValue, get, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         /* ──────────────────────── CONFIGURATION ──────────────────────── */
-        // CHANGE THESE TWO VARIABLES BASED ON THE FOLDER YOU ARE PUTTING THIS IN
-        const PLAYER_NAME = 'Carlo'; // 'James', 'Lewis', 'Paige', 'Peter', or 'Carlo'
-        const IS_DM = true;         // false for players, true for 'Carlo'
+        const PLAYER_NAME = 'Carlo'; 
+        const IS_DM = true;         
         /* ─────────────────────────────────────────────────────────────── */
 
         const CHAR_NAMES = {
@@ -187,7 +186,6 @@
         const dmRecipientInput = document.getElementById('dm-recipient');
         const inputArea = document.getElementById('input-area');
 
-        // Setup the specific subpages/tabs based on who is logged in
         const targets = IS_DM ? [...GAME_PLAYERS, 'All Outgoing'] : [...GAME_PLAYERS.filter(p => p !== PLAYER_NAME), DM_NAME];
 
         targets.forEach(target => {
@@ -198,10 +196,8 @@
             tabsContainer.appendChild(tab);
         });
 
-        // Initialize the first tab
         selectTab(targets[0]);
 
-        // Helper to consistently identify a conversation node
         function getConvoId(p1, p2) {
             return [p1, p2].sort().join('_');
         }
@@ -209,12 +205,10 @@
         function selectTab(target) {
             currentTab = target;
             
-            // Highlight the active tab
             Array.from(tabsContainer.children).forEach(t => {
                 t.classList.toggle('active', t.textContent === (target === DM_NAME ? 'Dungeon Master' : target));
             });
 
-            // "All Outgoing" tab logic for the DM
             if (target === 'All Outgoing') {
                 inputArea.style.display = 'none';
                 loadAllOutgoing();
@@ -223,13 +217,11 @@
                 inputArea.style.display = 'flex';
             }
 
-            // Input fields logic
             if (IS_DM) {
                 dmSenderInput.style.display = 'block';
                 dmRecipientInput.style.display = 'none';
             } else {
                 dmSenderInput.style.display = 'none';
-                // If a player is talking to the DM, force them to say who it is intended for
                 dmRecipientInput.style.display = target === DM_NAME ? 'block' : 'none';
             }
 
@@ -248,7 +240,6 @@
             const chatArea = document.getElementById('chat');
             chatArea.innerHTML = '';
             
-            // Sort chronologically and restrict to the last 3 messages for the specific view
             messages.sort((a, b) => a.timestamp - b.timestamp);
             const recent = messages.slice(-3);
 
@@ -260,7 +251,6 @@
                 const el = document.createElement('div');
                 el.className = 'message';
                 
-                // Show real player name in brackets to the DM if it's an NPC/custom name
                 const realSenderText = (IS_DM && msg.realSender !== msg.senderName) ? ` [${msg.realSender}]` : '';
                 
                 el.innerHTML = `
@@ -284,7 +274,6 @@
                 let allOutgoing = [];
                 Object.values(allData).forEach(convo => {
                     Object.values(convo).forEach(msg => {
-                        // Gather any message sent by a player
                         if (GAME_PLAYERS.includes(msg.realSender)) {
                             allOutgoing.push(msg);
                         }
@@ -317,7 +306,6 @@
 
             let senderName = CHAR_NAMES[PLAYER_NAME] || PLAYER_NAME;
             
-            // DM Custom Naming requirement
             if (IS_DM) {
                 const dmSender = dmSenderInput.value.trim();
                 if (!dmSender) {
@@ -327,7 +315,6 @@
                 senderName = dmSender;
             }
 
-            // Player to DM recipient requirement
             if (!IS_DM && currentTab === DM_NAME) {
                 const intended = dmRecipientInput.value.trim();
                 if (!intended) {
@@ -353,7 +340,6 @@
                 dmRecipientInput.value = ''; 
             }
 
-            // Ensure only 3 messages are kept in the conversation log memory
             const snap = await get(messagesRef);
             const data = snap.val() || {};
             const keys = Object.keys(data).sort((a, b) => data[a].timestamp - data[b].timestamp);
@@ -368,7 +354,6 @@
             await push(messagesRef, msg);
         });
         
-        // Allow enter key sending
         document.getElementById('msg-text').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 document.getElementById('send-btn').click();
