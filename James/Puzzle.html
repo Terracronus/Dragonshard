@@ -871,7 +871,7 @@
         update(GREF, { phase: 'round_reveal', phaseStart: Date.now(), p3Winners: winners });
     }
 }
-        /* ── ROUND REVEAL ── */
+/* ── ROUND REVEAL ── */
         function rReveal(s) {
             const round=s.round||0;
 
@@ -906,12 +906,23 @@
                     :`<p class="w-text" style="font-size:11px;letter-spacing:2px">Waiting for DM&hellip;</p>`
                   }
                 </div>`;
+
             } else if (s.puzzle === 2) {
                 const last = round >= 2;
                 const diff = s.lastDiff;
                 const votes = s.votes || {};
                 let diffText = diff > 10000 ? "Failed" : (diff / 1000).toFixed(3) + "s";
-                let winClass = diff <= 500 ? 'win' : (diff > 2000 ? 'lose' : '');
+                
+                // Generous Color Thresholds
+                // Now stays green (win) up to 1.5s, stays neutral up to 4s
+                let winClass = diff <= 1500 ? 'win' : (diff > 4000 ? 'lose' : '');
+                
+                // Generous Label Thresholds
+                let outcomeText = "";
+                if (diff <= 500)       outcomeText = "Perfect!";
+                else if (diff <= 2000) outcomeText = "Great Sync!";
+                else if (diff <= 4000) outcomeText = "Decent";
+                else                   outcomeText = "Too far apart";
 
                 const minVote = Math.min(...Object.values(votes).filter(v=>v));
                 const rows = GAME_PLAYERS.map(p => {
@@ -927,7 +938,7 @@
                 <div style="text-align:center;max-width:290px">
                   <p class="rnd-bar">Round ${round+1} — Time Difference</p>
                   <p class="ph-title" style="margin-bottom:6px; font-size:28px">${diffText}</p>
-                  <div class="rv-outcome ${winClass}">${diff <= 200 ? 'Perfect!' : diff <= 1000 ? 'Good' : 'Too far apart'}</div>
+                  <div class="rv-outcome ${winClass}">${outcomeText}</div>
                   <div class="rv-rows">${rows}</div>
                   <p class="score-line">Total Score: ${s.teamScore}</p>
                   ${IS_DM
@@ -935,6 +946,7 @@
                     :`<p class="w-text" style="font-size:11px;letter-spacing:2px">Waiting for DM&hellip;</p>`
                   }
                 </div>`;
+
             } else if (s.puzzle === 3) {
                 const { m0, m1 } = getTourney(s);
                 const scores = s.p3Scores || {};
@@ -971,7 +983,6 @@
                 </div>`;
             }
         }
-
         async function advance() {
             const round=GS?.round||0;
             const maxRounds = GS?.puzzle === 1 ? 3 : (GS?.puzzle === 2 ? 2 : 1); 
