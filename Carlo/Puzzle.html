@@ -588,7 +588,7 @@
             const elapsed= Date.now()-s.phaseStart;
 
             const TOTAL_RNDS = s.puzzle === 1 ? 4 : (s.puzzle === 2 ? 3 : 2);
-            const RND_MS_CUR = s.puzzle === 1 ? 5000 : (s.puzzle === 2 ? 10000 : 60000);
+            const RND_MS_CUR = s.puzzle === 1 ? 3000 : (s.puzzle === 2 ? 10000 : 60000);
             const tl = Math.max(0, RND_MS_CUR - elapsed);
 
             if (s.puzzle === 1) {
