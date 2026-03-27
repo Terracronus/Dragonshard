@@ -822,50 +822,55 @@
         }
 
         function endRound() {
-            if(GS?.phase!=='round_active') return;
-            const round=GS.round||0;
+    if(GS?.phase!=='round_active') return;
+    const round=GS.round||0;
 
-            if (GS.puzzle === 1) {
-                const {tgt,desc}=getRound(GS.gameSeed, round);
-                const votes=GS.votes||{};
-                const guessers=GAME_PLAYERS.filter(p=>p!==desc);
-                const correct=guessers.filter(p=>votes[p]===tgt).length;
-                const majority=correct>guessers.length/2;
-                const score=(GS.teamScore||0)+(majority?1:0);
-                update(GREF,{phase:'round_reveal',phaseStart:Date.now(),teamScore:score});
-            } else if (GS.puzzle === 2) {
-                const votes = GS.votes || {};
-                const times = GAME_PLAYERS.map(p => votes[p] || 0);
-                const min = Math.min(...times);
-                const max = Math.max(...times);
-                let score = 0;
-                let diff = 99999;
-                if (min > 0) {
-                    diff = max - min;
-                    if (diff <= 200) score = 100;
-                    else if (diff <= 500) score = 80;
-                    else if (diff <= 1000) score = 50;
-                    else if (diff <= 2000) score = 20;
-                    else score = 10;
-                }
-                const newScore = (GS.teamScore || 0) + score;
-                update(GREF, { phase: 'round_reveal', phaseStart: Date.now(), teamScore: newScore, lastDiff: diff });
-            } else if (GS.puzzle === 3) {
-                const t = getTourney(GS);
-                const scores = GS.p3Scores || {};
-                const winners = GS.p3Winners || {};
-                ['m0', 'm1'].forEach(mid => {
-                    if (!winners[mid]) {
-                        const m = mid === 'm0' ? t.m0 : t.m1;
-                        const s0 = scores[m[0]] || 0;
-                        const s1 = scores[m[1]] || 0;
-                        winners[mid] = s0 >= s1 ? m[0] : m[1]; 
-                    }
-                });
-                update(GREF, { phase: 'round_reveal', phaseStart: Date.now(), p3Winners: winners });
-            }
+    // --- PUZZLE 1: SYMBOL CIPHER ---
+    if (GS.puzzle === 1) {
+        const {tgt,desc}=getRound(GS.gameSeed, round);
+        const votes=GS.votes||{};
+        const guessers=GAME_PLAYERS.filter(p=>p!==desc);
+        const correct=guessers.filter(p=>votes[p]===tgt).length;
+        const majority=correct>guessers.length/2;
+        const score=(GS.teamScore||0)+(majority?1:0);
+        update(GREF,{phase:'round_reveal',phaseStart:Date.now(),teamScore:score});
+
+    // --- PUZZLE 2: SILENT SYNC (Generous Scoring) ---
+    } else if (GS.puzzle === 2) {
+        const votes = GS.votes || {};
+        const times = GAME_PLAYERS.map(p => votes[p] || 0);
+        const min = Math.min(...times);
+        const max = Math.max(...times);
+        
+        let score = 0;
+        let diff = 99999;
+
+        if (min > 0) {
+            diff = max - min;
+            // Proportional Logic: 100 points minus the percentage of the 10s limit they missed by
+            // If diff is 1.5s (1500ms), they keep 85% of the points (85 pts)
+            score = Math.floor(100 * Math.max(0, 1 - (diff / 10000)));
         }
+        
+        const newScore = (GS.teamScore || 0) + score;
+        update(GREF, { phase: 'round_reveal', phaseStart: Date.now(), teamScore: newScore, lastDiff: diff });
 
+    // --- PUZZLE 3: ARCANE DUEL ---
+    } else if (GS.puzzle === 3) {
+        const t = getTourney(GS);
+        const scores = GS.p3Scores || {};
+        const winners = GS.p3Winners || {};
+        ['m0', 'm1'].forEach(mid => {
+            if (!winners[mid]) {
+                const m = mid === 'm0' ? t.m0 : t.m1;
+                const s0 = scores[m[0]] || 0;
+                const s1 = scores[m[1]] || 0;
+                winners[mid] = s0 >= s1 ? m[0] : m[1]; 
+            }
+        });
+        update(GREF, { phase: 'round_reveal', phaseStart: Date.now(), p3Winners: winners });
+    }
+}
         /* ── ROUND REVEAL ── */
         function rReveal(s) {
             const round=s.round||0;
