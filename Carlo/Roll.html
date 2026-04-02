@@ -261,8 +261,8 @@
         import { initializeApp }                          from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, get, push, remove, onValue }
                                                           from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import DiceBox from "/assets/dice-box/dice-box.es.min.js";
-
+        import DiceBox from "../assets/dice-box/dice-box.es.min.js";
+        
         const PLAYER_NAME = "Carlo";
         const DICE_COLOR  = "#1a1a1a";
         const IS_DM       = true;   // DM is exempt from rate limiting
@@ -385,7 +385,7 @@
 
         const Box = new DiceBox({
             container:      "#dice-box",
-            assetPath: "/assets/dice-box/assets/",
+            assetPath: "../assets/dice-box/assets/",
             theme:          "default",
             themeColor:     DICE_COLOR,
             labelColor:     "#ffffff",
