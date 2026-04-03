@@ -20,9 +20,17 @@
         .back-nav {
             position: absolute; top: 30px; left: 20px; z-index: 100;
             color: #f59e0b; text-decoration: none; text-transform: uppercase;
-            letter-spacing: 2px; font-size: 11px;
+            letter-spacing: 2px; font-size: 13px;
             border: 1px solid rgba(245,158,11,0.3);
-            padding: 8px 15px; border-radius: 20px;
+            padding: 11px 20px; border-radius: 20px;
+            background: rgba(20,8,0,0.7); backdrop-filter: blur(5px);
+        }
+        .gallery-nav {
+            position: absolute; top: 30px; right: 20px; z-index: 100;
+            color: #f59e0b; text-decoration: none; text-transform: uppercase;
+            letter-spacing: 2px; font-size: 13px;
+            border: 1px solid rgba(245,158,11,0.3);
+            padding: 11px 20px; border-radius: 20px;
             background: rgba(20,8,0,0.7); backdrop-filter: blur(5px);
         }
         .lore-container {
@@ -41,6 +49,7 @@
 </head>
 <body>
     <a href="Hub.html" class="back-nav">← Hub</a>
+    <a href="../Model/Gallery.html" class="gallery-nav">Gallery →</a>
     <model-viewer
         src="../Model/Aphelia.glb"
         alt="Aphelia's Manifested Soul"
@@ -49,7 +58,7 @@
     </model-viewer>
     <div class="lore-container">
         <h1>Aphelia's Manifested Soul</h1>
-        <p>Swipe to Inspect the Shard</p>
+        <p>Swipe to Inspect the Soul</p>
     </div>
 </body>
 </html>
