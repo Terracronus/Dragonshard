@@ -131,12 +131,13 @@
             position: fixed; inset: 0; z-index: 50;
             background: rgba(0,0,10,0.85);
             backdrop-filter: blur(8px);
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none;
+            display: none; align-items: center; justify-content: center;
+            opacity: 0;
             transition: opacity 0.35s ease;
         }
         .modal-overlay.open {
-            opacity: 1; pointer-events: all;
+            display: flex;
+            opacity: 1;
         }
 
         .modal {
@@ -261,12 +262,16 @@
         viewer.setAttribute('src', soul.model);
         viewer.setAttribute('alt', soul.label);
         nameEl.textContent = soul.label;
+        overlay.style.opacity = '';
         overlay.classList.add('open');
     }
 
     function closeModal() {
-        overlay.classList.remove('open');
-        setTimeout(() => viewer.setAttribute('src', ''), 350);
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+            overlay.classList.remove('open');
+            viewer.setAttribute('src', '');
+        }, 350);
     }
 
     closeBtn.addEventListener('click', closeModal);
