@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Soul Gallery</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <style>
+        :root {
+            --bg: #00000d;
+            --bg2: #05051a;
+            --accent: #9090bb;
+            --accent-dim: rgba(144,144,187,0.3);
+            --accent-glow: rgba(144,144,187,0.15);
+            --text: rgba(220,220,245,0.85);
+            --text-dim: rgba(160,160,210,0.6);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            width: 100%; min-height: 100%;
+            background-color: var(--bg);
+            font-family: 'Georgia', 'Times New Roman', serif;
+            color: var(--text);
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* ── Starfield ── */
+        canvas#stars {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            width: 100%; height: 100%;
+        }
+
+        /* ── Layout ── */
+        .page {
+            position: relative; z-index: 1;
+            width: 100%; min-height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center;
+            padding: 100px 0 60px;
+            gap: 0;
+        }
+
+        /* ── Back nav ── */
+        .back-nav {
+            position: absolute; top: 30px; left: 20px;
+            color: var(--accent); text-decoration: none; text-transform: uppercase;
+            letter-spacing: 2px; font-size: 13px;
+            border: 1px solid var(--accent-dim);
+            padding: 11px 20px; border-radius: 20px;
+            background: rgba(5,5,18,0.7); backdrop-filter: blur(5px);
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .back-nav:hover {
+            background: rgba(144,144,187,0.1);
+            border-color: rgba(144,144,187,0.6);
+        }
+
+        /* ── Header ── */
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        header h1 {
+            font-size: 13px; letter-spacing: 6px; text-transform: uppercase;
+            color: var(--accent); margin-bottom: 16px;
+        }
+        header h2 {
+            font-size: 38px; letter-spacing: 5px; text-transform: uppercase;
+            color: var(--text); text-shadow: 0 0 30px rgba(144,144,187,0.5);
+            font-weight: normal;
+        }
+        .divider {
+            width: 60px; height: 1px;
+            background: linear-gradient(to right, transparent, var(--accent), transparent);
+            margin: 18px auto 0;
+        }
+
+        /* ── Soul list ── */
+        .soul-list {
+            display: flex; flex-direction: column; gap: 6px;
+            width: 100%; max-width: 420px; padding: 0 24px;
+        }
+
+        .soul-entry {
+            display: flex; align-items: center; gap: 16px;
+            padding: 16px 22px;
+            border: 1px solid var(--accent-dim);
+            border-radius: 4px;
+            background: rgba(5,5,26,0.5);
+            backdrop-filter: blur(4px);
+            cursor: pointer;
+            transition: background 0.25s, border-color 0.25s, transform 0.2s;
+            position: relative; overflow: hidden;
+        }
+        .soul-entry::before {
+            content: '';
+            position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            background: var(--accent-dim);
+            transition: background 0.25s;
+        }
+        .soul-entry:hover {
+            background: var(--accent-glow);
+            border-color: rgba(144,144,187,0.6);
+            transform: translateX(4px);
+        }
+        .soul-entry:hover::before {
+            background: var(--accent);
+        }
+
+        .soul-name {
+            flex: 1; font-size: 15px; letter-spacing: 3px;
+            text-transform: uppercase; color: var(--text);
+        }
+        .soul-sub {
+            font-size: 10px; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--text-dim);
+        }
+        .soul-arrow {
+            font-size: 14px; color: var(--accent-dim);
+            transition: color 0.2s, transform 0.2s;
+        }
+        .soul-entry:hover .soul-arrow {
+            color: var(--accent); transform: translateX(3px);
+        }
+
+        /* ── Modal overlay ── */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(0,0,10,0.85);
+            backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        .modal-overlay.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal {
+            position: relative;
+            width: min(520px, 92vw);
+            height: min(620px, 88vh);
+            background: var(--bg2);
+            border: 1px solid var(--accent-dim);
+            border-radius: 6px;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            transform: translateY(20px) scale(0.97);
+            transition: transform 0.35s ease;
+            box-shadow: 0 0 60px rgba(144,144,187,0.12), 0 0 0 1px rgba(144,144,187,0.08);
+        }
+        .modal-overlay.open .modal {
+            transform: translateY(0) scale(1);
+        }
+
+        model-viewer {
+            flex: 1; width: 100%;
+            --poster-color: transparent;
+        }
+
+        .modal-footer {
+            padding: 18px 24px;
+            border-top: 1px solid var(--accent-dim);
+            background: rgba(5,5,18,0.9);
+            text-align: center;
+        }
+        .modal-footer h3 {
+            font-size: 18px; letter-spacing: 4px; text-transform: uppercase;
+            color: var(--text); font-weight: normal;
+            text-shadow: 0 0 12px rgba(144,144,187,0.6);
+            margin-bottom: 4px;
+        }
+        .modal-footer p {
+            font-size: 10px; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--text-dim);
+        }
+
+        .modal-close {
+            position: absolute; top: 14px; right: 14px; z-index: 10;
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 1px solid var(--accent-dim);
+            background: rgba(5,5,18,0.8);
+            color: var(--accent); font-size: 16px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s, border-color 0.2s;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            background: rgba(144,144,187,0.15);
+            border-color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<div class="page">
+    <a href="Hub.html" class="back-nav">← Hub</a>
+
+    <header>
+        <h1>Manifested Souls</h1>
+        <h2>Soul Gallery</h2>
+        <div class="divider"></div>
+    </header>
+
+    <div class="soul-list" id="soulList"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+        <button class="modal-close" id="modalClose">✕</button>
+        <model-viewer
+            id="modelViewer"
+            alt="Manifested Soul"
+            auto-rotate rotation-per-second="60deg" camera-controls bounds="tight"
+            shadow-intensity="1.5" exposure="1.2">
+        </model-viewer>
+        <div class="modal-footer">
+            <h3 id="modalName"></h3>
+            <p>Swipe to Inspect the Soul</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ── Souls data ──
+    const souls = [
+        { name: "Alaric",   label: "Alaric's Manifested Soul",    model: "../Model/Alaric.glb"  },
+        { name: "Larris",   label: "Larris' Manifested Soul",     model: "../Model/Larris.glb"  },
+        { name: "Glacivox", label: "Glacivox's Manifested Soul",  model: "../Model/Glacivox.glb"},
+        { name: "Aphelia",  label: "Aphelia's Manifested Soul",   model: "../Model/Aphelia.glb" },
+        { name: "Dwik",       label: "Dwik's Manifested Soul",       model: "../Model/Dwik.glb"    },
+        { name: "Locked",   label: "Locked's Manifested Soul",    model: "../Model/Locked.glb"  },
+        { name: "Locked",   label: "Locked's Manifested Soul",    model: "../Model/Locked.glb"  },
+        { name: "Locked",   label: "Locked's Manifested Soul",    model: "../Model/Locked.glb"  },
+    ];
+
+    // ── Build list ──
+    const list = document.getElementById('soulList');
+    souls.forEach((soul, i) => {
+        const el = document.createElement('div');
+        el.className = 'soul-entry';
+        el.innerHTML = `
+            <span class="soul-name">${soul.name}</span>
+            <span class="soul-sub">Manifested Soul</span>
+            <span class="soul-arrow">→</span>
+        `;
+        el.addEventListener('click', () => openModal(soul));
+        list.appendChild(el);
+    });
+
+    // ── Modal logic ──
+    const overlay  = document.getElementById('modalOverlay');
+    const viewer   = document.getElementById('modelViewer');
+    const nameEl   = document.getElementById('modalName');
+    const closeBtn = document.getElementById('modalClose');
+
+    function openModal(soul) {
+        viewer.setAttribute('src', soul.model);
+        viewer.setAttribute('alt', soul.label);
+        nameEl.textContent = soul.label;
+        overlay.style.opacity = '';
+        overlay.classList.add('open');
+    }
+
+    function closeModal() {
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+            overlay.classList.remove('open');
+            viewer.setAttribute('src', '');
+        }, 350);
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    // ── Starfield ──
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+
+    function resize() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    function initStars() {
+        stars = Array.from({ length: 120 }, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 1.2 + 0.2,
+            a: Math.random(),
+            speed: Math.random() * 0.004 + 0.001,
+            phase: Math.random() * Math.PI * 2
+        }));
+    }
+
+    function drawStars(t) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        stars.forEach(s => {
+            const alpha = s.a * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(144,144,187,${alpha})`;
+            ctx.fill();
+        });
+        requestAnimationFrame(drawStars);
+    }
+
+    resize();
+    initStars();
+    window.addEventListener('resize', () => { resize(); initStars(); });
+    requestAnimationFrame(drawStars);
+</script>
+</body>
+</html>
