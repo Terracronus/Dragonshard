@@ -229,6 +229,7 @@
         <button id="btn-open-roll" disabled>Roll…</button>
     </div>
 
+    <!-- Slide-up dice selector -->
     <div id="roll-overlay">
         <div class="overlay-handle"></div>
         <div class="overlay-header">
@@ -260,7 +261,7 @@
         import { initializeApp }                          from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, get, push, remove, onValue }
                                                           from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import DiceBox from "../assets/dice-box/dice-box.es.min.js";
+        import DiceBox                                    from "https://terracronus.github.io/Dragonshard/assets/dice-box/dice-box.es.min.js";
 
         const PLAYER_NAME = "Carlo";
         const DICE_COLOR  = "#1a1a1a";
@@ -384,7 +385,7 @@
 
         const Box = new DiceBox({
             container:      "#dice-box",
-            assetPath: "../assets/dice-box/assets/",
+            assetPath:      "/Dragonshard/assets/dice-box/assets/",
             theme:          "default",
             themeColor:     DICE_COLOR,
             labelColor:     "#ffffff",
@@ -434,4 +435,100 @@
                         ? `You rolled ${data.label}: ${data.display}`
                         : `${player} rolled ${data.label}: ${data.display}`;
                 }
-      
+                logEl.appendChild(el);
+            }
+        });
+
+        onValue(histRef, (snapshot) => {
+            const raw = snapshot.val();
+            if (!raw) {
+                histListEl.innerHTML = '<em class="empty-note">No rolls yet</em>';
+                return;
+            }
+            const entries = Object.values(raw).sort((a, b) => b.timestamp - a.timestamp);
+            histListEl.innerHTML = "";
+            for (const e of entries) {
+                const div = document.createElement('div');
+                div.className = "hist-entry";
+                div.innerHTML =
+                    `<span class="hist-who">${e.player}</span>` +
+                    `<span class="hist-time">${timeAgo(e.timestamp)}</span><br>` +
+                    `<span class="hist-roll">${e.label}: ${e.display}</span>`;
+                histListEl.appendChild(div);
+            }
+        });
+
+        const saveToHistory = async (entry) => {
+            await push(histRef, entry);
+            const snap = await get(histRef);
+            const val  = snap.val();
+            if (!val) return;
+            const ordered = Object.entries(val)
+                .sort((a, b) => a[1].timestamp - b[1].timestamp)
+                .map(([k]) => k);
+            if (ordered.length > MAX_HISTORY) {
+                const toDelete = ordered.slice(0, ordered.length - MAX_HISTORY);
+                await Promise.all(toDelete.map(k => remove(ref(db, `roll_history/${k}`))));
+            }
+        };
+
+        // --- Roll execution ---
+        let busy = false;
+
+        confirmBtn.addEventListener('click', async () => {
+            if (!selectedFace || busy) return;
+            const cost = getPhysicalDice();
+            if (!IS_DM) {
+                if (getDiceUsed() + cost > RATE_LIMIT) { updateUI(); return; }
+                recordDice(cost);
+            }
+            overlay.classList.remove('open');
+
+            let notation, label;
+            if (isPercentile) {
+                notation = '2d10';
+                label    = 'D100';
+            } else {
+                notation = `${diceCount}${selectedFace}`;
+                label    = diceCount > 1
+                    ? `${diceCount}d${selectedFace.slice(1)}`   // e.g. "3d6"
+                    : selectedLabel;                              // e.g. "D6"
+            }
+
+            await doRoll(notation, label, isPercentile);
+        });
+
+        const doRoll = async (notation, label, perc = false) => {
+            if (busy) return;
+            busy = true;
+            openRollBtn.disabled = true;
+            confirmBtn.disabled  = true;
+            try {
+                await set(myRef, { notation, label, status: "rolling", timestamp: Date.now() });
+                Box.clear();
+                const results = await Box.roll(notation);
+                const rawVals = results.map(r => r.value);
+                let display, total;
+                if (perc) {
+                    total   = computeD100(rawVals[0], rawVals[1]);
+                    display = String(total);
+                } else {
+                    total   = rawVals.reduce((a, b) => a + b, 0);
+                    display = rawVals.length > 1
+                        ? `[${rawVals.join(' + ')}] = ${total}`
+                        : String(total);
+                }
+                await set(myRef, { notation, label, display, total, status: "complete", timestamp: Date.now() });
+                await saveToHistory({ player: PLAYER_NAME, notation, label, display, total, timestamp: Date.now() });
+                setTimeout(() => set(myRef, null), 10000);
+            } catch (err) {
+                console.error("Roll error:", err);
+            } finally {
+                busy = false;
+                openRollBtn.disabled = false;
+                updateUI();
+            }
+        };
+    </script>
+</body>
+</html>

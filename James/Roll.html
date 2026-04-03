@@ -261,7 +261,7 @@
         import { initializeApp }                          from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, get, push, remove, onValue }
                                                           from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import DiceBox from "/assets/dice-box/dice-box.es.min.js";
+        import DiceBox                                    from "https://terracronus.github.io/Dragonshard/assets/dice-box/dice-box.es.min.js";
 
         const PLAYER_NAME = "James";
         const DICE_COLOR  = "#5b21b6";
@@ -385,7 +385,7 @@
 
         const Box = new DiceBox({
             container:      "#dice-box",
-            assetPath: "/assets/dice-box/",
+            assetPath:      "/Dragonshard/assets/dice-box/assets/",
             theme:          "default",
             themeColor:     DICE_COLOR,
             labelColor:     "#ffffff",
